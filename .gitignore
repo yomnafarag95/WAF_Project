@@ -22,5 +22,20 @@ venv/
 playwright-report/
 test-results/
 
+# Backups & temp
+*.bak
+*.orig
+*.bad
+
+# Presentations
+*.pptx
+
+# Archive & dumps
+data/_archive_*/
+sources_dump.txt
+
+# Tools (dev-only helpers)
+tools/
+
 # OS
 .DS_Store
