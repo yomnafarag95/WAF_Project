@@ -1,0 +1,254 @@
+﻿"""
+attack_driver.py - persona/scenario-driven ATTACK traffic generator.
+=====================================================================
+The attack analogue of src/collection/benign_driver.py. It replays curated
+payloads through the ATTACK proxy (proxy_attack, port 8889) so the shared
+mitmproxy addon (src/capture/capture_addon.py) captures every request with the
+SAME schema_v2 shape as benign traffic.
+
+The driver sets EVERY X-Capture-* control header explicitly, which is why it -
+unlike dotdotpwn / XSStrike - never relies on the attack proxy's default_label
+(default_label=sqli would otherwise mislabel XSS / path_traversal /
+code_injection; see run_attacks.sh). This makes the Python driver the PRIMARY,
+label-safe generator; run_attacks.sh is an optional real-tool volume booster.
+
+WHAT IT COVERS (every design note):
+  * attacker personas  -> X-Capture-Persona   (attacker_personas.py)
+  * scenarios/endpoint  -> X-Capture-Scenario  (attack_scenarios.py)
+  * evasion variants    -> X-Capture-Variant + X-Capture-Parent (attack_payloads.py)
+  * per-session ids      -> X-Capture-Session   (split-by-session ready)
+  * open-set held-out    -> code_injection collected through the SAME personas,
+                            so "unknown" == novel ATTACK TYPE, not novel style
+  * correct labels        -> X-Capture-Label per attack type
+
+VECTOR CAVEAT (honest limitation, documented in README_ATTACKS.md):
+capture_addon.py derives content.decoded_payload from the URL (path+query)
+ONLY. Payloads delivered via body/header/cookie ARE present in
+content.raw_request, but NOT in the URL-derived aux features
+(payload_length / special_char_ratio / traversal_depth). Extend
+extract_features.py to fold request_body + injected headers into
+decoded_payload if you want those features to cover non-query vectors.
+
+usage:
+  pip install requests pyyaml
+  # bring up the attack proxy first (writes to the SEPARATE data/raw_attack dir):
+  #   docker compose up -d --force-recreate mitmproxy-attack
+  python3 src/attacks/attack_driver.py --config config/sources.yaml
+  python3 src/attacks/attack_driver.py --config config/sources.yaml --only-app dvwa --only-attack sqli
+  python3 src/attacks/attack_driver.py --config config/sources.yaml --dry-run   # preview only
+"""
+
+import argparse
+import random
+import re
+import sys
+import time
+import uuid
+
+import requests
+import yaml
+
+from attacker_personas import ATTACKER_PERSONAS
+from attack_scenarios import build_attack_steps, endpoint_for
+
+
+def rate_delay_s(persona, jitter_pct: float = 25.0) -> float:
+    """Think-time between attack requests (seconds).
+
+    Base range comes from the persona's rate_policy (like benign speed_profile);
+    `jitter_pct` adds benign-style random variance on top so the timing does not
+    look robotic even when the same persona runs many sessions.
+    """
+    lo, hi = persona.rate_policy.min_delay_ms, persona.rate_policy.max_delay_ms
+    base = random.randint(lo, hi)
+    if jitter_pct:
+        base *= 1.0 + random.uniform(-jitter_pct / 100.0, jitter_pct / 100.0)
+    return max(0.0, base) / 1000.0
+
+
+def capture_headers(app, attack_type, session_id, persona, step) -> dict:
+    """All X-Capture-* control headers (read and stripped by the addon)."""
+    return {
+        "X-Capture-Source": app,
+        "X-Capture-App": app,
+        "X-Capture-Type": "scripted",
+        "X-Capture-Mode": "tool",         # generation_mode=tool -> label_source=tool_confirmed
+        "X-Capture-Label": attack_type,   # sqli|xss|path_traversal|code_injection
+        "X-Capture-Session": session_id,
+        "X-Capture-Persona": persona.persona_id,
+        "X-Capture-Scenario": f"{attack_type}:{persona.goal.value}:{step.vector}",
+        "X-Capture-Tool": "attack_driver",
+        "X-Capture-Variant": step.variant_type,
+        "X-Capture-Parent": step.parent_id,
+    }
+
+
+# ------------------------- best-effort per-app auth -------------------------
+def login_dvwa(session, base_url):
+    """DVWA needs a CSRF user_token + login, then a security=low cookie."""
+    try:
+        r = session.get(f"{base_url}/login.php", timeout=15, verify=False)
+        m = re.search(r"user_token'\s*value='([0-9a-f]+)'", r.text)
+        token = m.group(1) if m else ""
+        session.post(
+            f"{base_url}/login.php",
+            data={"username": "admin", "password": "password",
+                  "Login": "Login", "user_token": token},
+            timeout=15, verify=False,
+        )
+        session.cookies.set("security", "low")
+    except Exception as e:
+        print(f"    [dvwa login skipped] {e}", file=sys.stderr)
+
+
+def login_webgoat(session, base_url):
+    try:
+        session.post(
+            f"{base_url}/login",
+            data={"username": "benign-user", "password": "Benign123!"},
+            timeout=15, verify=False,
+        )
+    except Exception as e:
+        print(f"    [webgoat login skipped] {e}", file=sys.stderr)
+
+
+def do_login(session, app, base_url):
+    if app == "dvwa":
+        login_dvwa(session, base_url)
+    elif app == "webgoat":
+        login_webgoat(session, base_url)
+    # juice_shop search is public; SSTI /profile runs best-effort as guest.
+
+
+# ------------------------- send one attack step -------------------------
+def send_step(session, base_url, step, headers, proxies, dry_run) -> bool:
+    url = base_url + step.path
+    params = dict(step.extra_params)
+    data = None
+    hdrs = dict(headers)
+    cookies = None
+    method = step.method
+
+    if step.vector == "query":
+        params[step.param] = step.payload
+    elif step.vector == "body":
+        data = {step.param: step.payload}
+        if method == "GET":
+            method = "POST"
+    elif step.vector == "header":
+        hdrs["User-Agent"] = step.payload   # header injection point
+        params[step.param] = "test"          # keep the endpoint meaningful
+    elif step.vector == "cookie":
+        cookies = {"inj": step.payload}      # cookie injection point
+        params[step.param] = "test"
+
+    if dry_run:
+        loc = {"query": f"?{step.param}=<payload>", "body": "[body]",
+               "header": "[User-Agent]", "cookie": "[cookie inj]"}[step.vector]
+        print(f"    [{step.attack_type}/{step.variant_type}] {method} "
+              f"{step.path} {loc}  payload={step.payload[:70]!r}")
+        return True
+
+    try:
+        session.request(method, url, params=params, data=data, headers=hdrs,
+                        cookies=cookies, proxies=proxies, timeout=20,
+                        allow_redirects=False, verify=False)
+        return True
+    except Exception as e:
+        print(f"    [skip] {method} {step.path} -> {e}", file=sys.stderr)
+        return False
+
+
+def run_persona_attack(persona, app, base_url, attack_types, proxies,
+                       sessions, dry_run, rng, jitter_pct=25.0,
+                       session_pause_ms=0):
+    for attack_type in attack_types:
+        if not endpoint_for(app, attack_type):
+            continue
+        for s in range(sessions):
+            session_id = str(uuid.uuid4())
+            sess = requests.Session()
+            if not dry_run:
+                do_login(sess, app, base_url)
+            steps = build_attack_steps(persona, app, attack_type, rng)
+            if not steps:
+                continue
+            rp = persona.rate_policy
+            print(f"  - persona={persona.persona_id} attack={attack_type} "
+                  f"session {s + 1}/{sessions} steps={len(steps)} "
+                  f"delay={rp.min_delay_ms}-{rp.max_delay_ms}ms +/-{jitter_pct:.0f}%")
+            for step in steps:
+                headers = capture_headers(app, attack_type, session_id, persona, step)
+                send_step(sess, base_url, step, headers, proxies, dry_run)
+                if not dry_run:
+                    # think-time between each attack request (benign-style)
+                    time.sleep(rate_delay_s(persona, jitter_pct))
+            sess.close()
+            # pause between sessions (only in real mode, not after the last one)
+            if not dry_run and session_pause_ms and s < sessions - 1:
+                time.sleep(session_pause_ms / 1000.0)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", required=True)
+    ap.add_argument("--only-app", default=None, help="dvwa|webgoat|juice_shop")
+    ap.add_argument("--only-attack", default=None,
+                    help="sqli|xss|path_traversal|code_injection")
+    ap.add_argument("--only-persona", default=None)
+    ap.add_argument("--sessions-per-persona", type=int, default=1)
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--dry-run", action="store_true",
+                    help="print planned requests, send nothing")
+    ap.add_argument("--jitter-pct", type=float, default=25.0,
+                    help="random variance on think-time delays (benign-style). 0 disables")
+    ap.add_argument("--session-pause-ms", type=int, default=0,
+                    help="extra pause between sessions, in milliseconds")
+    args = ap.parse_args()
+
+    rng = random.Random(args.seed)
+    if args.seed is not None:
+        random.seed(args.seed)
+
+    with open(args.config, encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+
+    proxy_url = cfg["proxy_attack"]
+    proxies = {"http": proxy_url, "https": proxy_url}
+
+    apps = cfg["apps"]
+    if args.only_app:
+        apps = {args.only_app: apps[args.only_app]}
+
+    personas = list(ATTACKER_PERSONAS.values())
+    if args.only_persona:
+        personas = [ATTACKER_PERSONAS[args.only_persona]]
+
+    try:
+        import urllib3
+        urllib3.disable_warnings()
+    except Exception:
+        pass
+
+    for app_name, app_cfg in apps.items():
+        base_url = app_cfg["base_url"]
+        train_attacks = list(app_cfg.get("attacks", []))
+        heldout = ["code_injection"] if app_cfg.get("code_injection") else []
+        attack_types = train_attacks + heldout
+        if args.only_attack:
+            attack_types = [a for a in attack_types if a == args.only_attack]
+        if not attack_types:
+            continue
+        print(f"[+] {app_name} -> {base_url}  attacks={attack_types}")
+        for persona in personas:
+            run_persona_attack(persona, app_name, base_url, attack_types,
+                               proxies, args.sessions_per_persona, args.dry_run,
+                               rng, args.jitter_pct, args.session_pause_ms)
+
+    print("[done] dry-run complete (no traffic sent)" if args.dry_run
+          else "[done] attack collection finished -> data/raw_attack/*_raw.jsonl")
+
+
+if __name__ == "__main__":
+    main()
+

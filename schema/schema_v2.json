@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WAF Attack Classifier - Record Schema v2 (LOCKED)",
+  "description": "single-label, hierarchical. content=model input, metadata=audit-only, features_aux=derived-from-content only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_id", "session_id", "metadata", "content", "features_aux", "variant", "label"],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "record_id": {"type": "string", "description": "uuid"},
+    "session_id": {"type": "string"},
+    "timestamp": {"type": "string", "description": "ISO-8601, audit-only"},
+
+    "metadata": {
+      "type": "object",
+      "description": "AUDIT ONLY - NEVER a model input.  (/)  .    splits  audit .",
+      "additionalProperties": false,
+      "required": ["source_id", "app", "source_type", "capture_tool", "capture_date"],
+      "properties": {
+        "source_id": {"type": "string", "description": "e.g. juice_shop / webgoat / dvwa / csic2010"},
+        "app": {"type": "string"},
+        "source_type": {"enum": ["scripted", "real", "public_dataset"]},
+        "tech_stack": {"type": ["string", "null"], "description": "node_angular | java | php"},
+        "environment": {"type": ["string", "null"]},
+        "generation_mode": {"enum": ["browser", "tool", "dataset"], "description": "metadata: browser(persona) vs tool(attack).  feature"},
+        "persona_id": {"type": ["string", "null"], "description": "metadata:  persona split.  feature"},
+        "scenario_id": {"type": ["string", "null"], "description": "metadata:  scenario split.  feature"},
+        "tool_name": {"type": ["string", "null"], "description": "sqlmap | XSStrike | dotdotpwn | null"},
+        "capture_tool": {"type": "string", "description": "mitmproxy"},
+        "capture_date": {"type": "string"},
+        "site_category": {"type": ["string", "null"], "description": "metadata only - source fingerprint"},
+        "response_status_code": {"type": ["integer", "null"], "description": "metadata NOT feature (response leakage)"}
+      }
+    },
+
+    "content": {
+      "type": "object",
+      "description": "PRIMARY MODEL INPUT. raw_request   .",
+      "additionalProperties": false,
+      "required": ["http_method", "url_path", "raw_request", "decoded_payload"],
+      "properties": {
+        "http_method": {"type": "string"},
+        "url_path": {"type": "string"},
+        "query_string": {"type": ["string", "null"]},
+        "request_body": {"type": ["string", "null"]},
+        "raw_request": {"type": "string", "description": "   (method+path+headers+body)     X-Capture-* headers"},
+        "decoded_payload": {"type": "string", "description": " canonicalization (URL-decode  + normalize) —   Path Traversal"}
+      }
+    },
+
+    "features_aux": {
+      "type": "object",
+      "description": "DERIVED FROM content ONLY. auxiliary numeric -    .    metadata.",
+      "additionalProperties": false,
+      "properties": {
+        "path_length": {"type": "integer"},
+        "query_param_count": {"type": "integer"},
+        "payload_length": {"type": "integer"},
+        "special_char_ratio": {"type": "number"},
+        "encoded_char_ratio": {"type": "number"},
+        "traversal_depth": {"type": "integer", "description": " ../  decode"},
+        "header_count": {"type": "integer"},
+        "content_type": {"type": ["string", "null"]},
+        "inter_arrival_ms": {"type": ["integer", "null"], "description": "rhythm  (   ) — feature "},
+        "request_rate_window": {"type": ["integer", "null"], "description": "aux —  requests  "}
+      }
+    },
+
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variant_type", "parent_id"],
+      "properties": {
+        "variant_type": {"type": "string", "description": "original | url_encoded | double_encoded | case_swap | comment_break ..."},
+        "parent_id": {"type": ["string", "null"], "description": "variants of same parent MUST stay in the same split ( leakage)"}
+      }
+    },
+
+    "label": {
+      "type": "object",
+      "description": "single-label + hierarchical. level1 = binary, class = level2.",
+      "additionalProperties": false,
+      "required": ["level1", "class", "split_role", "label_source"],
+      "properties": {
+        "level1": {"enum": ["benign", "malicious"]},
+        "class": {"enum": ["benign", "sqli", "xss", "path_traversal", "code_injection"]},
+        "split_role": {"enum": ["train", "val", "test", "heldout_unknown", "cross_app_test"]},
+        "label_source": {"enum": ["tool_confirmed", "repo", "manual", "dataset"]}
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+# ==============================================================================
+# WAF Attack Classifier — Lab environment (3 tech stacks + unified capture)
+#   juice-shop (Node/Angular:3000) · webgoat (Java:8080) · dvwa (PHP:8081)
+#   mitmproxy  -> benign:8888 / attack:8889
+# ⚠️  Intentionally vulnerable apps — keep on an isolated network only.
+# ==============================================================================
+services:
+
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: juice_shop
+    ports: ["3000:3000"]
+    networks: [lab_net]
+    restart: unless-stopped
+
+  webgoat:
+    image: webgoat/webgoat:latest
+    container_name: webgoat
+    environment: ["TZ=Etc/UTC"]
+    ports: ["8080:8080", "9090:9090"]
+    networks: [lab_net]
+    restart: unless-stopped
+
+  # DVWA — self-contained image (bundles its own MySQL). Stable on PHP 7.x, so
+  # "Create / Reset Database" on /setup.php actually builds the tables.
+  # No external dvwa-db needed. Login: admin / password.
+  dvwa:
+    image: vulnerables/web-dvwa:latest
+    container_name: dvwa
+    ports: ["8081:80"]
+    networks: [lab_net]
+    restart: unless-stopped
+
+  mitmproxy-benign:
+    image: mitmproxy/mitmproxy:latest
+    container_name: mitm_benign
+    user: root          # needed to bind-mount ./data/raw
+    command: >
+      mitmdump -s /addons/capture_addon.py
+      --set capture_dir=/out/raw
+      --set default_label=benign --set default_type=scripted --set default_mode=browser
+      --listen-port 8888
+    volumes:
+      - ./src/capture:/addons
+      - ./data/raw:/out/raw
+    ports: ["8888:8888"]
+    networks: [lab_net]
+
+  mitmproxy-attack:
+    image: mitmproxy/mitmproxy:latest
+    container_name: mitm_attack
+    user: root          # needed to bind-mount ./data/raw_attack
+    command: >
+      mitmdump -s /addons/capture_addon.py
+      --set capture_dir=/out/raw
+      --set default_label=sqli --set default_type=scripted --set default_tool=sqlmap --set default_mode=tool
+      --listen-port 8889
+    volumes:
+      - ./src/capture:/addons
+      - ./data/raw_attack:/out/raw   # SEPARATE dir: attack data never collides with benign data/raw
+    ports: ["8889:8889"]
+    networks: [lab_net]
+
+networks:
+  lab_net:
+    driver: bridge

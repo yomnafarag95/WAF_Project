@@ -1,0 +1,82 @@
+# ==============================================================================
+# Single source-of-truth for app config + persona + attack matrix (schema v2).
+#  benign_driver.py  run_attacks.sh
+# ==============================================================================
+
+proxy_benign: "http://127.0.0.1:8888"
+proxy_attack: "http://127.0.0.1:8889"
+
+# ---  :    benign + attack (paired within app) ---
+apps:
+  juice_shop:
+    tech_stack: "node_angular"
+    base_url: "http://juice-shop:3000"   #   service  lab_net ( proxied  mitmproxy)
+    requires_login: false
+    #  benign  personas  (register   -  0  RUN_GUIDE).
+    #     env: JUICE_BENIGN_EMAIL / JUICE_BENIGN_PASSWORD
+    #     logged-in personas   guests .
+    benign_login:
+      email: "benign_user@juice-sh.op"
+      password: "Benign123!"
+      register_once: true
+    journeys: ["browse_home", "search_products", "view_product", "about_pages", "api_products"]
+    #     (training) +   held-out code_injection
+    attacks: ["sqli", "xss"]
+    code_injection: "ssti_pug"        # ⭐ SSTI  Pug template = code injection (CWE-94) — held-out
+
+  webgoat:
+    tech_stack: "java"
+    base_url: "http://webgoat:8080/WebGoat"   #   service  lab_net
+    requires_login: true
+    register: true
+    # WebGoat rejects underscores: "Username can only contain lowercase
+    # letters, digits, and -". Must use a hyphen, not benign_user.
+    login_user: "benign-user"
+    login_pass: "Benign123!"
+    journeys: ["login", "browse_lessons", "view_profile", "static_pages"]
+    attacks: ["sqli", "xss", "path_traversal"]
+    code_injection: null              # ❌ WebGoat  Code Injection (CWE-94) —  
+
+  dvwa:
+    tech_stack: "php"
+    base_url: "http://dvwa:80"   #  lab_net  80 ( 8081   )
+    requires_login: true
+    setup_db: true
+    login_user: "admin"
+    login_pass: "password"
+    security_level: "low"
+    journeys: ["login", "browse_menu", "view_instructions", "static_pages", "dvwa_sqli_benign", "dvwa_xss_r_benign", "dvwa_fi_benign", "dvwa_brute_benign"]
+    # ⭐  : DVWA    ( benign ) —   source-shortcut
+    attacks: ["sqli", "xss", "path_traversal"]   # path_traversal  File Inclusion (LFI/RFI)
+    code_injection: null              # DVWA  Command Injection (CWE-78)  CWE-94
+
+# ---  :  → ( + endpoint ) ---
+attack_matrix:
+  sqli:
+    tool: "sqlmap"
+    split_role: "train"
+  xss:
+    tool: "xsstrike"
+    split_role: "train"
+  path_traversal:
+    tool: "dotdotpwn"
+    split_role: "train"
+  code_injection:                     # ⭐ held-out unknown (open-set) — 
+    tool: "payloads_replay"           # PayloadsAllTheThings/CWE-94 + SSTI → replay  Juice Shop
+    source_app: "juice_shop"          #    → novelty =   ( source confound)
+    split_role: "heldout_unknown"
+
+# --- benign persona settings for WebGoat & DVWA (benign_driver.py) ---
+# NOTE: persona IDENTITY (name/goal/speed/device/auth/depth/patience) comes
+# from the SAME 6 personas as Juice Shop (src/collection/personas/configs.py),
+# so persona_id values are comparable across all 3 apps. This block only
+# supplies the app-agnostic knobs benign_driver.py still needs: the overall
+# session-length range (adjusted per persona depth) and the UA pool personas
+# are picked from (matched to persona.device: desktop vs mobile).
+personas:
+  session_len: [10, 25]
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
+    - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15"
+    - "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/123.0 Safari/537.36"
+    - "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile Safari/604.1"

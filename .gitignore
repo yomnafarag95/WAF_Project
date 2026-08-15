@@ -1,0 +1,26 @@
+# الداتا ماتترفعش على git (حجم كبير + فيها attack payloads)
+data/raw/*
+data/processed/*
+data/heldout/*
+data/traces/*
+!data/**/.gitkeep
+
+# نتائج كبيرة / مواليد
+reports/**/*.png
+reports/**/*.csv
+reports/**/*.pkl
+!reports/**/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Playwright
+playwright-report/
+test-results/
+
+# OS
+.DS_Store

