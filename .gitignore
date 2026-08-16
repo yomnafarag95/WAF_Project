@@ -1,5 +1,7 @@
 # الداتا ماتترفعش على git (حجم كبير + فيها attack payloads)
 data/raw/*
+data/raw_attack/*
+data/merged/*
 data/processed/*
 data/heldout/*
 data/traces/*
