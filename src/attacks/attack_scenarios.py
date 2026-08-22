@@ -23,13 +23,16 @@ ENDPOINTS = {
     ("dvwa", "sqli"): {"method": "GET", "path": "/vulnerabilities/sqli/",
                        "param": "id", "extra": {"Submit": "Submit"}},
     ("dvwa", "xss"): {"method": "GET", "path": "/vulnerabilities/xss_r/", "param": "name"},
-    ("dvwa", "path_traversal"): {"method": "GET", "path": "/vulnerabilities/fi/", "param": "page"},
+    ("dvwa", "command_injection"): {"method": "GET", "path": "/vulnerabilities/exec/",
+                       "param": "ip", "extra": {"Submit": "Submit"}},
 
     # base_url already ends in /WebGoat -> paths here must be RELATIVE to it
     # (no leading /WebGoat), otherwise you get /WebGoat/WebGoat/... -> 404.
-    ("webgoat", "sqli"): {"method": "GET", "path": "/SqlInjection/attack", "param": "account"},
-    ("webgoat", "xss"): {"method": "GET", "path": "/CrossSiteScripting/attack5a", "param": "field1"},
-    ("webgoat", "path_traversal"): {"method": "GET", "path": "/PathTraversal", "param": "file"},
+    ("webgoat", "sqli"): {"method": "POST", "path": "/SqlInjection/assignment5b",
+                      "param": "userid", "extra": {"login_count": "1"}},
+    ("webgoat", "xss"): {"method": "GET", "path": "/CrossSiteScripting/attack5a",
+                     "param": "field1",
+                     "extra": {"QTY1": "1", "QTY2": "1", "QTY3": "1", "QTY4": "1", "field2": "748474"}},
 
     ("juice_shop", "sqli"): {"method": "GET", "path": "/rest/products/search", "param": "q"},
     ("juice_shop", "xss"): {"method": "GET", "path": "/rest/products/search", "param": "q"},

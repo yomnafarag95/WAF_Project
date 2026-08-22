@@ -1,4 +1,4 @@
-﻿"""
+"""
 mitmproxy addon â€” Unified capture layer (schema v2, RAW stage).
 
 :   (benign + attack)     addon =   .
@@ -34,9 +34,80 @@ STATIC_ASSET_EXTS = (
 )
 
 
+# Real dynamic sites captured via a real/organic browser session carry NO
+# X-Capture-* headers (a real browser can't send custom headers), so we
+# infer app/source_type from the request's own domain instead of relying
+# on a client-sent header. This is only a FALLBACK: if X-Capture-App/-Type
+# is explicitly present (e.g. from benign_driver.py or attack_driver.py),
+# that explicit value always wins - this map never overrides it.
+SITE_HOSTS = {
+    "facebook": ["facebook.com", "www.facebook.com", "m.facebook.com", "web.facebook.com"],
+    "amazon": ["amazon.com", "www.amazon.com"],
+    "medium": ["medium.com", "www.medium.com"],
+    "stackoverflow": ["stackoverflow.com", "www.stackoverflow.com"],
+    "reddit": ["reddit.com", "www.reddit.com", "old.reddit.com", "m.reddit.com"],
+    "youtube": ["youtube.com", "www.youtube.com", "m.youtube.com", "youtubei.googleapis.com"],
+}
+
+DOMAIN_APP_MAP = {host: app for app, hosts in SITE_HOSTS.items() for host in hosts    "x.com": "x",
+    "www.x.com": "x",
+    "mobile.x.com": "x",
+    "twitter.com": "x",
+    "www.twitter.com": "x",
+    "mobile.twitter.com": "x",
+    "api.x.com": "x",
+    "api.twitter.com": "x",
+}
+
+NOISE_DOMAIN_SUFFIXES = (
+    "doubleclick.net",
+    "googlesyndication.com",
+    "googletagmanager.com",
+    "google-analytics.com",
+    "googleadservices.com",
+    "adtrafficquality.google",
+    "gstatic.com",
+    "googlevideo.com",
+    "gvt2.com",
+    "ytimg.com",
+    "googleusercontent.com",
+)
+
+
+def _is_noise_host(host):
+    host = (host or "").lower()
+    return any(host == d or host.endswith("." + d) for d in NOISE_DOMAIN_SUFFIXES)
+
+
 def _is_static_asset(path: str) -> bool:
     clean = path.split("?", 1)[0].lower()
     return clean.endswith(STATIC_ASSET_EXTS)
+
+
+# Known background telemetry / analytics-beacon endpoints. These fire
+# continuously regardless of what a user is actually doing (every scroll,
+# hover, tab-switch, perf sample, recaptcha check, styling-config fetch, or
+# cookie-consent ping), and each payload embeds a fresh UUID/timestamp so
+# they never hash as exact duplicates - but they carry almost no
+# request-shape diversity useful for an HTTP attack classifier. Drop them
+# at capture time, same as static assets and third-party ad/tracking noise.
+# Extend this list as new sites are added to the pilot.
+NOISE_PATH_SUBSTRINGS = (
+    "/svc/shreddit/events",
+    "/svc/events/preload-head",
+    "/svc/shreddit/perfMetrics",
+    "/svc/shreddit/update-recaptcha",
+    "/svc/shreddit/data-protection-consent",
+    "/svc/shreddit/styling-overrides",
+    "/api/stats/qoe",
+    "/youtubei/v1/log_event",
+)
+
+
+def _is_noise_path(path: str) -> bool:
+    clean = path.split("?", 1)[0]
+    return any(noise in clean for noise in NOISE_PATH_SUBSTRINGS)
+
 
 
 def load(loader):
@@ -72,6 +143,11 @@ def request(flow: http.HTTPFlow):
     # No record is attached to flow.metadata, so response() will skip it too.
     if _is_static_asset(flow.request.path):
         return
+    if _is_noise_path(flow.request.path):
+        return
+
+        if _is_noise_host(flow.request.host):
+            return
 
     # skip login/bootstrap requests (carry X-Capture-Skip; never recorded)
     if "X-Capture-Skip" in flow.request.headers:
@@ -83,9 +159,11 @@ def request(flow: http.HTTPFlow):
 
     # --- X-Capture-* (control headers)     raw_request ---
     source_id = _pop(h, "X-Capture-Source", o.default_source)
-    app = _pop(h, "X-Capture-App", o.default_app)
+    inferred_app = DOMAIN_APP_MAP.get(flow.request.host.lower(), o.default_app)
+    app = _pop(h, "X-Capture-App", inferred_app)
     tech_stack = _pop(h, "X-Capture-Stack", o.default_stack) or None
-    ctype = _pop(h, "X-Capture-Type", o.default_type)        # real|scripted|public_dataset
+    inferred_type = "real" if flow.request.host.lower() in DOMAIN_APP_MAP else o.default_type
+    ctype = _pop(h, "X-Capture-Type", inferred_type)        # real|scripted|public_dataset
     mode = _pop(h, "X-Capture-Mode", o.default_mode)         # browser|tool|dataset
     label = _pop(h, "X-Capture-Label", o.default_label)      # benign|sqli|xss|path_traversal|code_injection
     session = _pop(h, "X-Capture-Session", "")

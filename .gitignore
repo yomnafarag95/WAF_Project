@@ -41,3 +41,4 @@ tools/
 
 # OS
 .DS_Store
+*.bak*

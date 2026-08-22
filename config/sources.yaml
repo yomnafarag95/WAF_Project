@@ -34,7 +34,7 @@ apps:
     login_user: "benign-user"
     login_pass: "Benign123!"
     journeys: ["login", "browse_lessons", "view_profile", "static_pages"]
-    attacks: ["sqli", "xss", "path_traversal"]
+    attacks: ["sqli", "xss"]
     code_injection: null              # ❌ WebGoat  Code Injection (CWE-94) —  
 
   dvwa:
@@ -47,7 +47,7 @@ apps:
     security_level: "low"
     journeys: ["login", "browse_menu", "view_instructions", "static_pages", "dvwa_sqli_benign", "dvwa_xss_r_benign", "dvwa_fi_benign", "dvwa_brute_benign"]
     # ⭐  : DVWA    ( benign ) —   source-shortcut
-    attacks: ["sqli", "xss", "path_traversal"]   # path_traversal  File Inclusion (LFI/RFI)
+    attacks: ["sqli", "xss", "command_injection"]   # command_injection = OS Command Injection (CWE-78, /vulnerabilities/exec/)
     code_injection: null              # DVWA  Command Injection (CWE-78)  CWE-94
 
 # ---  :  → ( + endpoint ) ---
@@ -58,8 +58,8 @@ attack_matrix:
   xss:
     tool: "xsstrike"
     split_role: "train"
-  path_traversal:
-    tool: "dotdotpwn"
+  command_injection:
+    tool: "commix"
     split_role: "train"
   code_injection:                     # ⭐ held-out unknown (open-set) — 
     tool: "payloads_replay"           # PayloadsAllTheThings/CWE-94 + SSTI → replay  Juice Shop

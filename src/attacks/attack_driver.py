@@ -256,7 +256,7 @@ def run_probe(apps, proxies, only_attack=None):
     print("[probe] logging in + one canary request per (app, attack) "
           "(X-Capture-Skip -> not captured)")
     canary = {"sqli": "1' OR '1'='1", "xss": "<script>1</script>",
-              "path_traversal": "../../etc/passwd", "code_injection": "#{7*7}"}
+              "command_injection": "; id", "code_injection": "#{7*7}"}
     for app_name, app_cfg in apps.items():
         base_url = app_cfg["base_url"]
         attack_types = _attack_types_for(app_cfg, only_attack)
