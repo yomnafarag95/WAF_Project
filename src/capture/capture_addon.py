@@ -44,7 +44,7 @@ SITE_HOSTS = {
     "facebook": ["facebook.com", "www.facebook.com", "m.facebook.com", "web.facebook.com"],
     "amazon": ["amazon.com", "www.amazon.com"],
     "medium": ["medium.com", "www.medium.com"],
-    "stackoverflow": ["stackoverflow.com", "www.stackoverflow.com"],
+    "pinterest": ["pinterest.com", "www.pinterest.com"],
     "reddit": ["reddit.com", "www.reddit.com", "old.reddit.com", "m.reddit.com"],
     "youtube": ["youtube.com", "www.youtube.com", "m.youtube.com", "youtubei.googleapis.com"],
 }
