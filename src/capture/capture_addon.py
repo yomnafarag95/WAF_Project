@@ -49,7 +49,9 @@ SITE_HOSTS = {
     "youtube": ["youtube.com", "www.youtube.com", "m.youtube.com", "youtubei.googleapis.com"],
 }
 
-DOMAIN_APP_MAP = {host: app for app, hosts in SITE_HOSTS.items() for host in hosts    "x.com": "x",
+DOMAIN_APP_MAP = {host: app for app, hosts in SITE_HOSTS.items() for host in hosts}
+DOMAIN_APP_MAP.update({
+    "x.com": "x",
     "www.x.com": "x",
     "mobile.x.com": "x",
     "twitter.com": "x",
@@ -57,7 +59,7 @@ DOMAIN_APP_MAP = {host: app for app, hosts in SITE_HOSTS.items() for host in hos
     "mobile.twitter.com": "x",
     "api.x.com": "x",
     "api.twitter.com": "x",
-}
+})
 
 NOISE_DOMAIN_SUFFIXES = (
     "doubleclick.net",
