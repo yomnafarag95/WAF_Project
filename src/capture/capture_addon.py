@@ -188,7 +188,11 @@ def request(flow: http.HTTPFlow):
     redacted_headers = redact_headers(h)
 
     # raw_request      X-Capture-* (PRIMARY model input)
-    raw_lines = [f"{req.method} {req.path} HTTP/1.1"]
+    raw_lines = [
+        f"{req.method} "
+        f"{req.path.split('?')[0] + (('?' + query_string) if query_string else '')} "
+        "HTTP/1.1"
+    ]
     raw_lines += [f"{k}: {v}" for k, v in redacted_headers.items()]
     raw_request = "\r\n".join(raw_lines) + "\r\n\r\n" + body
 

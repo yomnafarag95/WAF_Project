@@ -16,6 +16,7 @@ SENSITIVE_HEADER_NAMES = {
 SENSITIVE_BODY_FIELDS = {
     "password", "pass", "pwd", "email", "username", "login", "access_token",
     "refresh_token", "id_token", "session_key", "auth_token", "otp", "secret",
+    "token",
 }
 
 
@@ -82,7 +83,7 @@ def redact_query_string(query_string):
 # ---------------------------------------------------------------------------
 
 _seen_counts = defaultdict(int)
-MAX_DUPLICATES = 3  # keep up to this many identical requests, drop the rest
+MAX_DUPLICATES = 1  # strict: record the first occurrence only, drop exact repeats
 
 _VOLATILE_FIELD_PATTERN = re.compile(
     r'"(timestamp|cursor|ts|_ts|request_id|client_mutation_id)"\s*:\s*"?[\w\-.]+"?'
