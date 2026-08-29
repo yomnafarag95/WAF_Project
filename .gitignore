@@ -42,3 +42,5 @@ tools/
 # OS
 .DS_Store
 *.bak*
+data/quarantine/*
+data/quarantine/*

@@ -1,3 +1,4 @@
+from capture_safety import redact_headers, redact_body, redact_query_string, is_duplicate
 """
 mitmproxy addon â€” Unified capture layer (schema v2, RAW stage).
 
@@ -148,8 +149,8 @@ def request(flow: http.HTTPFlow):
     if _is_noise_path(flow.request.path):
         return
 
-        if _is_noise_host(flow.request.host):
-            return
+    if _is_noise_host(flow.request.host):
+        return
 
     # skip login/bootstrap requests (carry X-Capture-Skip; never recorded)
     if "X-Capture-Skip" in flow.request.headers:
@@ -179,9 +180,16 @@ def request(flow: http.HTTPFlow):
     query_string = urllib.parse.urlencode(list(req.query.items())) if req.query else None
     body = req.get_text(strict=False) or ""
 
+    if is_duplicate(req.method, req.path, body):
+        return
+
+    body = redact_body(body, h.get("content-type", ""))
+    query_string = redact_query_string(query_string)
+    redacted_headers = redact_headers(h)
+
     # raw_request      X-Capture-* (PRIMARY model input)
     raw_lines = [f"{req.method} {req.path} HTTP/1.1"]
-    raw_lines += [f"{k}: {v}" for k, v in h.items()]
+    raw_lines += [f"{k}: {v}" for k, v in redacted_headers.items()]
     raw_request = "\r\n".join(raw_lines) + "\r\n\r\n" + body
 
     # canonicalization:    (  path_traversal)

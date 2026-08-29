@@ -43,10 +43,10 @@ def record_signature(record):
     """Build a stable fingerprint for duplicate detection based on the
     method + path + query + body, ignoring things like timestamps or
     headers that naturally differ between otherwise-identical requests."""
-    method = get(record, "method", "content.method", default="")
+    method = get(record, "content.http_method", "method", default="")
     path = get(record, "content.url_path", "url_path", "path", default="")
-    query = get(record, "content.query", "query", default="")
-    body = get(record, "content.body", "body", default="")
+    query = get(record, "content.query_string", "query", default="")
+    body = get(record, "content.request_body", "body", default="")
     raw = f"{method}|{path}|{query}|{body}"
     return hashlib.sha256(raw.encode("utf-8", errors="ignore")).hexdigest()
 
