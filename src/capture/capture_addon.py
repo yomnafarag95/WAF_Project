@@ -104,6 +104,8 @@ NOISE_PATH_SUBSTRINGS = (
     "/svc/shreddit/styling-overrides",
     "/api/stats/qoe",
     "/youtubei/v1/log_event",
+    "/ajax/bnzai",
+    "/ajax/bulk-route-definitions/",
 )
 
 
