@@ -43,8 +43,7 @@ STATIC_ASSET_EXTS = (
 # that explicit value always wins - this map never overrides it.
 SITE_HOSTS = {
     "facebook": ["facebook.com", "www.facebook.com", "m.facebook.com", "web.facebook.com"],
-    "amazon": ["amazon.com", "www.amazon.com"],
-    "medium": ["medium.com", "www.medium.com"],
+    "amazon": ["amazon.com", "www.amazon.com", "amazon.eg", "www.amazon.eg"],
     "pinterest": ["pinterest.com", "www.pinterest.com"],
     "reddit": ["reddit.com", "www.reddit.com", "old.reddit.com", "m.reddit.com"],
     "youtube": ["youtube.com", "www.youtube.com", "m.youtube.com", "youtubei.googleapis.com"],
@@ -106,6 +105,10 @@ NOISE_PATH_SUBSTRINGS = (
     "/youtubei/v1/log_event",
     "/ajax/bnzai",
     "/ajax/bulk-route-definitions/",
+    "/i/api/1.1/flow/timeline.json",
+    "/rd/uedata",
+    "/cdn-cgi/rum",
+    "clientele/reports/performance",
 )
 
 
