@@ -78,7 +78,7 @@ apps:
     tech_stack: "php"
     base_url: "http://mutillidae:80"   # lab_net service, host-mapped to 8083
     requires_login: false
-    journeys: ["browse_home"]           # TODO verify: add more real Mutillidae page paths
+    journeys: ["mutillidae_home", "mutillidae_blog", "mutillidae_text_view"]
     attacks: ["command_injection"]
     code_injection: null
 

@@ -85,4 +85,13 @@ JOURNEYS = {
     "static_pages":    [{"do": "goto", "path": "/robots.txt"},
                         {"do": "goto", "path": "/favicon.ico"}],
     "login":           [{"do": "login"}],   #   handler    driver
+
+    # ---------- Mutillidae II (PHP) - added 2026-09-18 ----------
+    # Page names read directly from the site's own menu HTML (already
+    # confirmed, not guessed): homepage + two harmless "Others" pages.
+    "mutillidae_home":      [{"do": "goto", "path": "/index.php"}],
+    "mutillidae_blog":      [{"do": "goto", "path": "/index.php?page=add-to-your-blog.php"},
+                             {"do": "goto", "path": "/index.php?page=view-someones-blog.php"}],
+    "mutillidae_text_view": [{"do": "goto", "path": "/index.php?page=text-file-viewer.php"},
+                             {"do": "goto", "path": "/index.php?page=show-log.php"}],
 }
