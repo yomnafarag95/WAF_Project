@@ -1,0 +1,570 @@
+{
+  "stage1": {
+    "decision_tree": {
+      "fit_seconds": 0.2,
+      "val": {
+        "f1": 0.9428989751098097,
+        "precision": 0.8936170212765957,
+        "recall": 0.9979338842975206,
+        "fpr": 0.031216069489685125,
+        "accuracy": 0.9748495270851246,
+        "tn": 3569,
+        "fp": 115,
+        "fn": 2,
+        "tp": 966,
+        "fpr_at_95recall": 0.0247014115092291
+      },
+      "test": {
+        "f1": 0.9844337090713903,
+        "precision": 0.9744952178533475,
+        "recall": 0.9945770065075922,
+        "fpr": 0.006514657980456026,
+        "accuracy": 0.9937038645245332,
+        "tn": 3660,
+        "fp": 24,
+        "fn": 5,
+        "tp": 917,
+        "fpr_at_95recall": 0.006243213897937025
+      },
+      "cross_app_test": {
+        "f1": 0.8924252068746021,
+        "precision": 1.0,
+        "recall": 0.8057471264367816,
+        "fpr": 0.0,
+        "accuracy": 0.8057471264367816,
+        "tn": 0,
+        "fp": 0,
+        "fn": 676,
+        "tp": 2804,
+        "fpr_at_95recall": null
+      },
+      "heldout_unknown": {
+        "f1": 0.10940919037199125,
+        "precision": 1.0,
+        "recall": 0.05787037037037037,
+        "fpr": 0.0,
+        "accuracy": 0.05787037037037037,
+        "tn": 0,
+        "fp": 0,
+        "fn": 814,
+        "tp": 50,
+        "fpr_at_95recall": null
+      }
+    },
+    "random_forest": {
+      "fit_seconds": 1.3,
+      "val": {
+        "f1": 0.9979381443298969,
+        "precision": 0.9958847736625515,
+        "recall": 1.0,
+        "fpr": 0.0010857763300760044,
+        "accuracy": 0.999140154772141,
+        "tn": 3680,
+        "fp": 4,
+        "fn": 0,
+        "tp": 968,
+        "fpr_at_95recall": 0.0
+      },
+      "test": {
+        "f1": 0.9951377633711507,
+        "precision": 0.9913885898815931,
+        "recall": 0.9989154013015185,
+        "fpr": 0.002171552660152009,
+        "accuracy": 0.9980460269214069,
+        "tn": 3676,
+        "fp": 8,
+        "fn": 1,
+        "tp": 921,
+        "fpr_at_95recall": 0.0
+      },
+      "cross_app_test": {
+        "f1": 0.9917427205562799,
+        "precision": 1.0,
+        "recall": 0.9836206896551725,
+        "fpr": 0.0,
+        "accuracy": 0.9836206896551725,
+        "tn": 0,
+        "fp": 0,
+        "fn": 57,
+        "tp": 3423,
+        "fpr_at_95recall": null
+      },
+      "heldout_unknown": {
+        "f1": 0.9527272727272728,
+        "precision": 1.0,
+        "recall": 0.9097222222222222,
+        "fpr": 0.0,
+        "accuracy": 0.9097222222222222,
+        "tn": 0,
+        "fp": 0,
+        "fn": 78,
+        "tp": 786,
+        "fpr_at_95recall": null
+      }
+    },
+    "xgboost": {
+      "fit_seconds": 0.7,
+      "val": {
+        "f1": 0.9989680082559339,
+        "precision": 0.9979381443298969,
+        "recall": 1.0,
+        "fpr": 0.0005428881650380022,
+        "accuracy": 0.9995700773860705,
+        "tn": 3682,
+        "fp": 2,
+        "fn": 0,
+        "tp": 968,
+        "fpr_at_95recall": 0.0
+      },
+      "test": {
+        "f1": 0.9989154013015185,
+        "precision": 0.9989154013015185,
+        "recall": 0.9989154013015185,
+        "fpr": 0.0002714440825190011,
+        "accuracy": 0.9995657837603127,
+        "tn": 3683,
+        "fp": 1,
+        "fn": 1,
+        "tp": 921,
+        "fpr_at_95recall": 0.0
+      },
+      "cross_app_test": {
+        "f1": 0.9618138424821002,
+        "precision": 1.0,
+        "recall": 0.9264367816091954,
+        "fpr": 0.0,
+        "accuracy": 0.9264367816091954,
+        "tn": 0,
+        "fp": 0,
+        "fn": 256,
+        "tp": 3224,
+        "fpr_at_95recall": null
+      },
+      "heldout_unknown": {
+        "f1": 0.3895619757688723,
+        "precision": 1.0,
+        "recall": 0.24189814814814814,
+        "fpr": 0.0,
+        "accuracy": 0.24189814814814814,
+        "tn": 0,
+        "fp": 0,
+        "fn": 655,
+        "tp": 209,
+        "fpr_at_95recall": null
+      }
+    }
+  },
+  "stage1_per_app_fpr_test_random_forest": {
+    "amazon": {
+      "fpr": 0.008896797153024912,
+      "n_benign": 562,
+      "fp": 5
+    },
+    "dvwa": {
+      "fpr": 0.0,
+      "n_benign": 221,
+      "fp": 0
+    },
+    "facebook": {
+      "fpr": 0.0020876826722338203,
+      "n_benign": 479,
+      "fp": 1
+    },
+    "jsonplaceholder": {
+      "fpr": 0.0,
+      "n_benign": 187,
+      "fp": 0
+    },
+    "juice_shop": {
+      "fpr": 0.0,
+      "n_benign": 388,
+      "fp": 0
+    },
+    "pinterest": {
+      "fpr": 0.0019588638589618022,
+      "n_benign": 1021,
+      "fp": 2
+    },
+    "pokeapi": {
+      "fpr": 0.0,
+      "n_benign": 161,
+      "fp": 0
+    },
+    "webgoat": {
+      "fpr": 0.0,
+      "n_benign": 216,
+      "fp": 0
+    },
+    "wikipedia": {
+      "fpr": 0.0,
+      "n_benign": 79,
+      "fp": 0
+    },
+    "x": {
+      "fpr": 0.0,
+      "n_benign": 221,
+      "fp": 0
+    },
+    "youtube": {
+      "fpr": 0.0,
+      "n_benign": 149,
+      "fp": 0
+    }
+  },
+  "stage2": {
+    "decision_tree": {
+      "fit_seconds": 0.1,
+      "val": {
+        "accuracy": 0.9979338842975206,
+        "macro_f1": 0.9972642459096143,
+        "per_class_f1": {
+          "sqli": 0.9974424552429667,
+          "xss": 1.0,
+          "command_injection": 0.9943502824858758
+        },
+        "confusion_matrix": [
+          [
+            390,
+            0,
+            2
+          ],
+          [
+            0,
+            400,
+            0
+          ],
+          [
+            0,
+            0,
+            176
+          ]
+        ]
+      },
+      "test": {
+        "accuracy": 0.9945770065075922,
+        "macro_f1": 0.9935085607310397,
+        "per_class_f1": {
+          "sqli": 0.9934469200524246,
+          "xss": 0.998639455782313,
+          "command_injection": 0.9884393063583815
+        },
+        "confusion_matrix": [
+          [
+            379,
+            0,
+            3
+          ],
+          [
+            1,
+            367,
+            0
+          ],
+          [
+            1,
+            0,
+            171
+          ]
+        ]
+      },
+      "cross_app_test": {
+        "accuracy": 0.9890804597701149,
+        "macro_f1": 0.9878472181404612,
+        "per_class_f1": {
+          "sqli": 0.9901176470588235,
+          "xss": 0.9938090583251874,
+          "command_injection": 0.9796149490373726
+        },
+        "confusion_matrix": [
+          [
+            1052,
+            0,
+            18
+          ],
+          [
+            2,
+            1525,
+            16
+          ],
+          [
+            1,
+            1,
+            865
+          ]
+        ]
+      }
+    },
+    "random_forest": {
+      "fit_seconds": 0.6,
+      "val": {
+        "accuracy": 1.0,
+        "macro_f1": 1.0,
+        "per_class_f1": {
+          "sqli": 1.0,
+          "xss": 1.0,
+          "command_injection": 1.0
+        },
+        "confusion_matrix": [
+          [
+            392,
+            0,
+            0
+          ],
+          [
+            0,
+            400,
+            0
+          ],
+          [
+            0,
+            0,
+            176
+          ]
+        ]
+      },
+      "test": {
+        "accuracy": 0.9989154013015185,
+        "macro_f1": 0.9985924528541575,
+        "per_class_f1": {
+          "sqli": 0.9986928104575163,
+          "xss": 1.0,
+          "command_injection": 0.9970845481049563
+        },
+        "confusion_matrix": [
+          [
+            382,
+            0,
+            0
+          ],
+          [
+            0,
+            368,
+            0
+          ],
+          [
+            1,
+            0,
+            171
+          ]
+        ]
+      },
+      "cross_app_test": {
+        "accuracy": 0.9761494252873564,
+        "macro_f1": 0.972034994066325,
+        "per_class_f1": {
+          "sqli": 0.9701971572673086,
+          "xss": 0.9938050211933486,
+          "command_injection": 0.9521028037383178
+        },
+        "confusion_matrix": [
+          [
+            1058,
+            0,
+            12
+          ],
+          [
+            1,
+            1524,
+            18
+          ],
+          [
+            52,
+            0,
+            815
+          ]
+        ]
+      }
+    },
+    "xgboost": {
+      "fit_seconds": 0.4,
+      "val": {
+        "accuracy": 1.0,
+        "macro_f1": 1.0,
+        "per_class_f1": {
+          "sqli": 1.0,
+          "xss": 1.0,
+          "command_injection": 1.0
+        },
+        "confusion_matrix": [
+          [
+            392,
+            0,
+            0
+          ],
+          [
+            0,
+            400,
+            0
+          ],
+          [
+            0,
+            0,
+            176
+          ]
+        ]
+      },
+      "test": {
+        "accuracy": 0.9989154013015185,
+        "macro_f1": 0.9985924528541575,
+        "per_class_f1": {
+          "sqli": 0.9986928104575163,
+          "xss": 1.0,
+          "command_injection": 0.9970845481049563
+        },
+        "confusion_matrix": [
+          [
+            382,
+            0,
+            0
+          ],
+          [
+            0,
+            368,
+            0
+          ],
+          [
+            1,
+            0,
+            171
+          ]
+        ]
+      },
+      "cross_app_test": {
+        "accuracy": 0.9916666666666667,
+        "macro_f1": 0.9907527875301744,
+        "per_class_f1": {
+          "sqli": 0.9934518241347053,
+          "xss": 0.9947882736156352,
+          "command_injection": 0.9840182648401826
+        },
+        "confusion_matrix": [
+          [
+            1062,
+            0,
+            8
+          ],
+          [
+            1,
+            1527,
+            15
+          ],
+          [
+            5,
+            0,
+            862
+          ]
+        ]
+      }
+    }
+  },
+  "open_set": {
+    "method": "E_isoforest_bagged_softmax_mean",
+    "threshold": 0.6305876274745312,
+    "unknown_recall": 0.6932870370370371,
+    "known_reject_rate": 0.12396694214876033,
+    "mean_known_score": 2.0391914217816e-09,
+    "mean_unknown_score": 6.942675288877718,
+    "calibration": {
+      "iso_mu": 0.34044635397960427,
+      "iso_sd": 0.017636485752101857,
+      "sm_mu": 0.0007757460116408765,
+      "sm_sd": 0.00989055447280407
+    }
+  },
+  "cascade": {
+    "test": {
+      "accuracy": 0.9739470256187581,
+      "n": 4606,
+      "true_dist": {
+        "benign": 3684,
+        "sqli": 382,
+        "xss": 368,
+        "command_injection": 172
+      },
+      "pred_dist": {
+        "benign": 3677,
+        "sqli": 352,
+        "unknown": 116,
+        "xss": 333,
+        "command_injection": 128
+      },
+      "confusion": {
+        "benign": {
+          "benign": 3676,
+          "sqli": 3,
+          "unknown": 5
+        },
+        "sqli": {
+          "sqli": 349,
+          "unknown": 33
+        },
+        "xss": {
+          "xss": 333,
+          "unknown": 35
+        },
+        "command_injection": {
+          "command_injection": 128,
+          "unknown": 43,
+          "benign": 1
+        }
+      }
+    },
+    "cross_app_test": {
+      "accuracy": 0.8077586206896552,
+      "n": 3480,
+      "true_dist": {
+        "sqli": 1070,
+        "xss": 1543,
+        "command_injection": 867
+      },
+      "pred_dist": {
+        "sqli": 929,
+        "unknown": 609,
+        "xss": 1372,
+        "command_injection": 513,
+        "benign": 57
+      },
+      "confusion": {
+        "sqli": {
+          "sqli": 927,
+          "unknown": 130,
+          "benign": 13
+        },
+        "xss": {
+          "xss": 1372,
+          "unknown": 151,
+          "benign": 19,
+          "command_injection": 1
+        },
+        "command_injection": {
+          "command_injection": 512,
+          "unknown": 328,
+          "sqli": 2,
+          "benign": 25
+        }
+      }
+    },
+    "heldout_unknown": {
+      "accuracy": 0.6087962962962963,
+      "n": 864,
+      "true_dist": {
+        "code_injection": 864
+      },
+      "pred_dist": {
+        "unknown": 526,
+        "sqli": 111,
+        "xss": 138,
+        "command_injection": 11,
+        "benign": 78
+      },
+      "confusion": {
+        "code_injection": {
+          "unknown": 526,
+          "sqli": 111,
+          "xss": 138,
+          "command_injection": 11,
+          "benign": 78
+        }
+      }
+    }
+  }
+}

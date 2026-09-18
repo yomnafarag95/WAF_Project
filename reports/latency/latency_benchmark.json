@@ -1,0 +1,131 @@
+{
+  "n_requests": 7542,
+  "real_malicious_rate": 0.0883054892601432,
+  "worst_case_stages": [
+    {
+      "label": "feature_extraction",
+      "n": 7542,
+      "mean_ms": 1.4757005303976773,
+      "median_ms": 1.0710499991546385,
+      "p95_ms": 3.0621900041296612,
+      "p99_ms": 4.091665995074437,
+      "max_ms": 42.206500002066605,
+      "throughput_per_sec": 677.6442641316366
+    },
+    {
+      "label": "stage1_predict",
+      "n": 7542,
+      "mean_ms": 1.1767770220988694,
+      "median_ms": 1.1105000012321398,
+      "p95_ms": 1.3423699921986554,
+      "p99_ms": 1.629390000161948,
+      "max_ms": 158.33500000007916,
+      "throughput_per_sec": 849.7786591859395
+    },
+    {
+      "label": "stage2_predict_proba",
+      "n": 7542,
+      "mean_ms": 1.255977950049539,
+      "median_ms": 1.1872999893967062,
+      "p95_ms": 1.4029900012246799,
+      "p99_ms": 1.6011179971974343,
+      "max_ms": 234.23669999465346,
+      "throughput_per_sec": 796.1923216570461
+    },
+    {
+      "label": "isoforest_bag_score (5 forests)",
+      "n": 7542,
+      "mean_ms": 144.9817739458671,
+      "median_ms": 144.9267999996664,
+      "p95_ms": 156.62503500570892,
+      "p99_ms": 179.47861400360128,
+      "max_ms": 803.8887999864528,
+      "throughput_per_sec": 6.897418708460398
+    },
+    {
+      "label": "ensemble_combine",
+      "n": 7542,
+      "mean_ms": 0.027237045849090355,
+      "median_ms": 0.02570000651758164,
+      "p95_ms": 0.04139499578741377,
+      "p99_ms": 0.0562179974804167,
+      "max_ms": 0.15439999697264284,
+      "throughput_per_sec": 36714.70120293524
+    },
+    {
+      "label": "TOTAL_end_to_end (worst case - every request)",
+      "n": 7542,
+      "mean_ms": 148.94648472546248,
+      "median_ms": 148.61709999240702,
+      "p95_ms": 161.57618000288494,
+      "p99_ms": 184.53058599858196,
+      "max_ms": 858.6851000000024,
+      "throughput_per_sec": 6.713820751414145
+    }
+  ],
+  "gated": {
+    "mean_benign_path_ms": 2.7824852839698595,
+    "mean_malicious_path_ms": 134.73068229188272,
+    "measured_on_real_mix_ms": 14.539206099312931,
+    "measured_throughput_per_sec": 68.77954636376303,
+    "sensitivity": [
+      {
+        "malicious_rate": 0.01,
+        "avg_latency_ms": 4.101967254048988,
+        "throughput_per_sec": 243.78546635469007
+      },
+      {
+        "malicious_rate": 0.05,
+        "avg_latency_ms": 9.379895134365501,
+        "throughput_per_sec": 106.61099998189314
+      },
+      {
+        "malicious_rate": 0.1,
+        "avg_latency_ms": 15.977304984761146,
+        "throughput_per_sec": 62.58877832987361
+      },
+      {
+        "malicious_rate": 0.2,
+        "avg_latency_ms": 29.17212468555243,
+        "throughput_per_sec": 34.2792995292267
+      },
+      {
+        "malicious_rate": 0.3,
+        "avg_latency_ms": 42.36694438634372,
+        "throughput_per_sec": 23.603307117950507
+      },
+      {
+        "malicious_rate": 1.0,
+        "avg_latency_ms": 134.73068229188272,
+        "throughput_per_sec": 7.422214324080865
+      }
+    ]
+  },
+  "batching": [
+    {
+      "batch_size": 1,
+      "ms_per_request": 73.43999910714653,
+      "throughput_per_sec": 13.616557899749331
+    },
+    {
+      "batch_size": 10,
+      "ms_per_request": 6.461604029841985,
+      "throughput_per_sec": 154.76033433519672
+    },
+    {
+      "batch_size": 50,
+      "ms_per_request": 1.3651881538456878,
+      "throughput_per_sec": 732.499763628211
+    },
+    {
+      "batch_size": 100,
+      "ms_per_request": 0.7033498333476018,
+      "throughput_per_sec": 1421.7675935750042
+    },
+    {
+      "batch_size": 300,
+      "ms_per_request": 0.27054216666632175,
+      "throughput_per_sec": 3696.2814792319186
+    }
+  ]
+}

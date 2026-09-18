@@ -106,6 +106,13 @@ NOISE_PATH_SUBSTRINGS = (
     "/ajax/bnzai",
     "/ajax/bulk-route-definitions/",
     "/i/api/1.1/flow/timeline.json",
+    "/1.1/live_pipeline/update_subscriptions",
+    "/live_pipeline/events",  # X real-time pubsub telemetry (topic=tweet_engagement/...
+    # avcall/... ids) - found 2026-09-17: sibling of update_subscriptions above,
+    # same noise family, just never covered by that substring. Was the entire
+    # explanation for x's 5.6% Stage-1 FPR (4/71 benign test rows, all this path).
+    "/i/api/1.1/promoted_content/log.json",
+    "/i/api/1.1/graphql/viewer_context.json",  # perftown client-side perf telemetry, not real content
     "/rd/uedata",
     "/cdn-cgi/rum",
     "clientele/reports/performance",
@@ -115,6 +122,34 @@ NOISE_PATH_SUBSTRINGS = (
 def _is_noise_path(path: str) -> bool:
     clean = path.split("?", 1)[0]
     return any(noise in clean for noise in NOISE_PATH_SUBSTRINGS)
+
+
+# Facebook's GraphQL endpoint (/api/graphql/) carries both real content
+# (feed, comments, notifications, search) and pure background telemetry
+# (video-seen pings, ad loaders, usage loggers) behind the SAME url path.
+# We can't filter the whole path without losing real content, so we look
+# inside the form-encoded body for the operation name Facebook sends as
+# fb_api_req_friendly_name, and only drop the confirmed telemetry ops.
+NOISE_GRAPHQL_OPERATIONS = frozenset((
+    "FBUnifiedVideoSeenStateMutation",
+    "useInstreamAdsHaloFetcherQuery",
+    "FBScreenTimeLogger_syncMutation",
+    "CometRecordProductUsageMutationMutation",
+))
+
+
+def _is_noise_graphql_operation(flow) -> bool:
+    clean = flow.request.path.split("?", 1)[0]
+    if "/api/graphql/" not in clean:
+        return False
+    try:
+        from urllib.parse import parse_qs
+        body = flow.request.get_text() or ""
+        parsed = parse_qs(body)
+        friendly_name = parsed.get("fb_api_req_friendly_name", [""])[0]
+    except Exception:
+        return False
+    return friendly_name in NOISE_GRAPHQL_OPERATIONS
 
 
 
@@ -154,6 +189,9 @@ def request(flow: http.HTTPFlow):
     if _is_noise_path(flow.request.path):
         return
 
+    if _is_noise_graphql_operation(flow):
+        return
+
     if _is_noise_host(flow.request.host):
         return
 
@@ -185,7 +223,7 @@ def request(flow: http.HTTPFlow):
     query_string = urllib.parse.urlencode(list(req.query.items())) if req.query else None
     body = req.get_text(strict=False) or ""
 
-    if is_duplicate(req.method, req.path, body):
+    if is_duplicate(req.method, req.path, body, h.get("User-Agent", "")):
         return
 
     body = redact_body(body, h.get("content-type", ""))

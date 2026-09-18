@@ -50,16 +50,35 @@
 
     "features_aux": {
       "type": "object",
-      "description": "DERIVED FROM content ONLY. auxiliary numeric -    .    metadata.",
+      "description": "DERIVED FROM content ONLY. auxiliary numeric -    .    metadata. Mirrors extract_features.py's FEATURE_KEYS (28 numeric + content_type) — keep this list in sync with that file, not the other way around.",
       "additionalProperties": false,
       "properties": {
         "path_length": {"type": "integer"},
         "query_param_count": {"type": "integer"},
         "payload_length": {"type": "integer"},
-        "special_char_ratio": {"type": "number"},
-        "encoded_char_ratio": {"type": "number"},
-        "traversal_depth": {"type": "integer", "description": " ../  decode"},
+        "url_payload_length": {"type": "integer"},
+        "body_payload_length": {"type": "integer"},
+        "cookie_payload_length": {"type": "integer"},
+        "header_payload_length": {"type": "integer"},
         "header_count": {"type": "integer"},
+        "special_char_ratio": {"type": "number"},
+        "digit_ratio": {"type": "number"},
+        "uppercase_ratio": {"type": "number"},
+        "entropy": {"type": "number", "description": "Shannon entropy of the decoded payload"},
+        "encoded_char_ratio": {"type": "number"},
+        "double_encoding_count": {"type": "integer"},
+        "kw_sqli_count": {"type": "integer"},
+        "kw_xss_count": {"type": "integer"},
+        "kw_pathtrav_count": {"type": "integer", "description": "kept as a feature even though path_traversal is not a trained class - fires on command_injection/code_injection sensitive-file-read sub-payloads, rank 4/32 importance in stage2"},
+        "kw_codeinj_count": {"type": "integer"},
+        "kw_cmdi_count": {"type": "integer"},
+        "kw_sqli_density": {"type": "number", "description": "kw_sqli_count / payload_length - kept: rank 8/37 stage2 importance"},
+        "kw_cmdi_density": {"type": "number", "description": "kw_cmdi_count / payload_length - kept: rank 11/37 stage1 importance"},
+        "sql_comment_count": {"type": "integer"},
+        "angle_bracket_count": {"type": "integer"},
+        "quote_count": {"type": "integer"},
+        "quote_parity": {"type": "integer", "description": "quote_count % 2 - an odd quote count is the classic SQLi breakout signal"},
+        "paren_count": {"type": "integer"},
         "content_type": {"type": ["string", "null"]},
         "inter_arrival_ms": {"type": ["integer", "null"], "description": "rhythm  (   ) — feature "},
         "request_rate_window": {"type": ["integer", "null"], "description": "aux —  requests  "}
@@ -83,7 +102,7 @@
       "required": ["level1", "class", "split_role", "label_source"],
       "properties": {
         "level1": {"enum": ["benign", "malicious"]},
-        "class": {"enum": ["benign", "sqli", "xss", "path_traversal", "code_injection"]},
+        "class": {"enum": ["benign", "sqli", "xss", "command_injection", "code_injection"]},
         "split_role": {"enum": ["train", "val", "test", "heldout_unknown", "cross_app_test"]},
         "label_source": {"enum": ["tool_confirmed", "repo", "manual", "dataset"]}
       }

@@ -38,6 +38,49 @@ ENDPOINTS = {
     ("juice_shop", "xss"): {"method": "GET", "path": "/rest/products/search", "param": "q"},
     # HELD-OUT CWE-94: SSTI on the profile username field (Pug template).
     ("juice_shop", "code_injection"): {"method": "POST", "path": "/profile", "param": "username"},
+
+    # bWAPP (2026-09-12): NEW held-out cross-app test target, replacing webgoat
+    # in that role because it has real sqli + xss + command_injection - the
+    # first cross-app source that can test all three known classes, not two.
+    # MULTIPLE real endpoint variants per class (not one) - ground-truth
+    # verified directly against the running container (login, form fields,
+    # and the portal.php bug-select -> redirect mapping all confirmed live,
+    # not guessed): covers GET/POST/select-tampering/blind-boolean/blind-time
+    # for sqli, GET/POST/header-vector for xss. build_attack_steps() picks a
+    # random variant PER PAYLOAD, so a single capture run naturally spreads
+    # across real distinct injection contexts instead of hammering one page -
+    # directly answers the "many forms of the same attack" diversity request.
+    ("bwapp", "sqli"): [
+        {"method": "GET", "path": "/sqli_1.php", "param": "title"},        # GET/Search
+        {"method": "POST", "path": "/sqli_2.php", "param": "movie"},       # GET/Select UI, but POST-tamperable
+        {"method": "POST", "path": "/sqli_6.php", "param": "title"},       # POST/Search
+        {"method": "POST", "path": "/sqli_13.php", "param": "movie"},      # POST/Select
+        {"method": "GET", "path": "/sqli_4.php", "param": "title"},        # Blind - Boolean-Based
+        {"method": "GET", "path": "/sqli_15.php", "param": "title"},       # Blind - Time-Based
+    ],
+    ("bwapp", "xss"): [
+        {"method": "GET", "path": "/xss_get.php", "param": "firstname",
+         "extra": {"lastname": "test"}},                                   # Reflected GET
+        {"method": "POST", "path": "/xss_post.php", "param": "firstname",
+         "extra": {"lastname": "test"}},                                   # Reflected POST
+        {"method": "GET", "path": "/xss_json.php", "param": "title"},      # Reflected JSON
+        {"method": "GET", "path": "/xss_user_agent.php", "param": None,
+         "force_vector": "header"},                                        # Reflected User-Agent - payload MUST go in the header, not a form field
+    ],
+    ("bwapp", "command_injection"): [
+        {"method": "POST", "path": "/commandi.php", "param": "target"},
+        {"method": "POST", "path": "/commandi_blind.php", "param": "target"},
+    ],
+    # PLACEHOLDER - added 2026-09-18, NOT YET VERIFIED against a live
+    # container. Mutillidae II's classic OS-Command-Injection page is
+    # index.php?page=dns-lookup.php with a target_host field, but confirm
+    # the exact page/param by opening http://localhost:8083 in a browser
+    # BEFORE running attack_driver.py against this - do not trust this
+    # blindly.
+    ("mutillidae", "command_injection"): [
+        {"method": "POST", "path": "/index.php", "param": "target_host",
+         "extra": {"page": "dns-lookup.php"}},
+    ],
 }
 
 
@@ -57,13 +100,23 @@ class AttackStep:
 
 
 def endpoint_for(app: str, attack_type: str):
-    return ENDPOINTS.get((app, attack_type))
+    """Returns a LIST of endpoint specs (normalizes the single-dict legacy
+    entries used by dvwa/webgoat/juice_shop into a 1-element list, same shape
+    as bwapp's multi-variant entries)."""
+    spec = ENDPOINTS.get((app, attack_type))
+    if spec is None:
+        return []
+    return spec if isinstance(spec, list) else [spec]
 
 
 def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
-    """Turn one attacker persona into a list of AttackStep for (app, attack_type)."""
-    spec = endpoint_for(app, attack_type)
-    if not spec:
+    """Turn one attacker persona into a list of AttackStep for (app, attack_type).
+    When multiple real endpoint variants exist for this (app, attack_type),
+    a variant is chosen AT RANDOM PER PAYLOAD, so one capture run naturally
+    spreads across distinct real injection contexts (GET/POST/select-
+    tampering/blind/header) instead of repeating a single page."""
+    specs = endpoint_for(app, attack_type)
+    if not specs:
         return []
 
     bank = payloads.base_payloads(attack_type, persona.goal.value)
@@ -76,13 +129,18 @@ def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
     else:
         chosen = [rng.choice(bank) for _ in range(budget)]
 
-    # A GET-only endpoint can't carry a body payload -> fall back to query.
-    vector = persona.vector.value
-    if vector == "body" and spec["method"] == "GET":
-        vector = "query"
-
     steps = []
     for payload_id, raw_payload in chosen:
+        spec = specs[rng.randrange(len(specs))]
+
+        # A GET-only endpoint can't carry a body payload -> fall back to query.
+        # An endpoint that forces a specific vector (e.g. xss_user_agent.php,
+        # where the payload MUST be the User-Agent header, not a form field)
+        # overrides whatever vector the persona would otherwise have chosen.
+        vector = spec.get("force_vector") or persona.vector.value
+        if vector == "body" and spec["method"] == "GET":
+            vector = "query"
+
         variant_type, parent_id, transformed = payloads.apply_evasion(
             payload_id, raw_payload, persona.evasion.value, attack_type, rng
         )

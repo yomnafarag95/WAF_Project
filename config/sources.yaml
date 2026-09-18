@@ -50,6 +50,38 @@ apps:
     attacks: ["sqli", "xss", "command_injection"]   # command_injection = OS Command Injection (CWE-78, /vulnerabilities/exec/)
     code_injection: null              # DVWA  Command Injection (CWE-78)  CWE-94
 
+  bwapp:
+    tech_stack: "php"
+    base_url: "http://bwapp:80"       # lab_net service, host-mapped to 8082
+    requires_login: true
+    login_user: "bee"
+    login_pass: "bug"
+    security_level: "low"
+    # NEW HELD-OUT cross-app test target (2026-09-12), replacing webgoat in
+    # that role: only source with real sqli + xss + command_injection, so
+    # cross_app_test can finally cover all three known classes, not two.
+    # No benign journeys yet - attack-only for now; make_splits.py's
+    # --cross-app-holdout bwapp routes ALL of its malicious traffic to
+    # cross_app_test regardless.
+    attacks: ["sqli", "xss", "command_injection"]
+    code_injection: null
+
+  # Mutillidae II — added 2026-09-18. SECOND real, trainable source of
+  # command_injection (DVWA was the only one - see reports/PROGRESS_LOG.md,
+  # 2026-09-18 entry, LDA/t-SNE feature-space diagnostic). Unlike bWAPP,
+  # this one is NOT held out - it goes into the normal 70/15/15 split so it
+  # actually enriches training. journeys/path below are best-effort and
+  # MUST be verified against the live container before first real capture -
+  # open it in a browser and confirm the page names and the OS Command
+  # Injection form field name.
+  mutillidae:
+    tech_stack: "php"
+    base_url: "http://mutillidae:80"   # lab_net service, host-mapped to 8083
+    requires_login: false
+    journeys: ["browse_home"]           # TODO verify: add more real Mutillidae page paths
+    attacks: ["command_injection"]
+    code_injection: null
+
 # ---  :  → ( + endpoint ) ---
 attack_matrix:
   sqli:

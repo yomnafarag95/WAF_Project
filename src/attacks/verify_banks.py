@@ -34,13 +34,13 @@ import urllib.parse
 from collections import defaultdict
 
 # ---- config -----------------------------------------------------------------
-CLASSES = ["sqli", "xss", "path_traversal", "code_injection"]
+CLASSES = ["sqli", "xss", "command_injection", "code_injection"]
 GOALS_FALLBACK = ["exploit", "recon", "exfiltration"]
-KNOWN = {"sqli", "xss", "path_traversal"}
+KNOWN = {"sqli", "xss", "command_injection"}
 TARGET_MIN = 60          # distinct base payloads per KNOWN class
 CI_MAX = 20              # code_injection must stay small (held-out novel type)
 ID_RE = re.compile(
-    r"^(sqli|xss|path_traversal|code_injection)-(recon|exploit|exfiltration)-[a-z0-9_]+$"
+    r"^(sqli|xss|command_injection|code_injection)-(recon|exploit|exfiltration)-[a-z0-9_]+$"
 )
 
 # ---- import the module under test ------------------------------------------

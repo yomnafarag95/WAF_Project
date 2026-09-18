@@ -1,11 +1,17 @@
 # الداتا ماتترفعش على git (حجم كبير + فيها attack payloads)
-data/raw/*
-data/raw_attack/*
-data/merged/*
-data/processed/*
-data/heldout/*
-data/traces/*
+# Was previously listed subdirectory-by-subdirectory, which silently missed
+# every dir created since (splits/, incoming_drive/, validated/,
+# merge_work_*/, pilot/, qa_reports/, sanitized/, raw_attack_patched/,
+# archive/, header_donor_pool.json...) - found 2026-09-18 when data/ had
+# grown to 19GB and git status showed the whole folder untracked. Exclude
+# the ENTIRE data/ directory instead so this can't happen again; any new
+# subdirectory added later is covered automatically.
+data/*
 !data/**/.gitkeep
+
+# Trained models - large binaries, fully regenerable via train_baseline.py
+models/*
+!models/**/.gitkeep
 
 # نتائج كبيرة / مواليد
 reports/**/*.png
@@ -42,5 +48,3 @@ tools/
 # OS
 .DS_Store
 *.bak*
-data/quarantine/*
-data/quarantine/*

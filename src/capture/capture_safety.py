@@ -96,8 +96,14 @@ def _normalize_body_for_dedup(body_text):
     return _VOLATILE_FIELD_PATTERN.sub("", body_text)
 
 
-def is_duplicate(method, path, body_text):
-    sig_source = f"{method}:{path}:{_normalize_body_for_dedup(body_text)}"
+def is_duplicate(method, path, body_text, user_agent=""):
+    # user_agent is folded into the signature because header-vector attacks
+    # (e.g. bwapp's xss_user_agent.php) carry their ENTIRE payload in the
+    # User-Agent header with an otherwise constant method/path/empty-body -
+    # without this, every such request after the first hashes identical and
+    # gets dropped as a false "exact duplicate" (found 2026-09-12: 535/536
+    # header-vector XSS captures were silently discarded this way).
+    sig_source = f"{method}:{path}:{_normalize_body_for_dedup(body_text)}:{user_agent}"
     sig = hashlib.sha256(sig_source.encode("utf-8", "ignore")).hexdigest()
     _seen_counts[sig] += 1
     return _seen_counts[sig] > MAX_DUPLICATES

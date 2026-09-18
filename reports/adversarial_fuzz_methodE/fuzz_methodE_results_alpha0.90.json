@@ -1,0 +1,1369 @@
+{
+  "config": {
+    "rounds": 6,
+    "seed": 42,
+    "alpha": 0.9,
+    "n_heldout_rows": 150,
+    "threshold": -0.12287013457096796
+  },
+  "experiment_b_methodE": {
+    "summary": {
+      "static_recall": 0.7466666666666666,
+      "adversarial_recall": 0.64,
+      "combined_stage1_evasion": 64,
+      "n": 150
+    },
+    "rows": [
+      {
+        "record_id": "0ea464d1-721d-4a03-a5b1-eccf7c8f47c5",
+        "baseline_unknown_score": 1.2547201336935854,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.2547201336935854,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "07c18e17-efe5-470b-bd7d-0073c5a5551e",
+        "baseline_unknown_score": 0.5668399174534631,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.23837828190397117,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "3beede84-620b-4228-b9a5-e69e175e3ba4",
+        "baseline_unknown_score": 0.6961838436999603,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.008127284100577892,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "a448625a-70d7-463a-8093-a016dd65707b",
+        "baseline_unknown_score": 0.41465669225452867,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.3893183022988915,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "44c33af5-72c9-4c23-83a6-12f763ba47fc",
+        "baseline_unknown_score": -0.5152995199875974,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.5152995199875974,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "b19c81e8-1158-456f-a78b-f2180fea0d0c",
+        "baseline_unknown_score": -0.4507198548231326,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.4507198548231326,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "9dd5b046-6cec-4185-a8a3-ff8b1b84e258",
+        "baseline_unknown_score": 0.08226519061581664,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.10140637450969991,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "b5c803dc-ac61-44cc-b8ac-f47fee51e1c5",
+        "baseline_unknown_score": -0.4310301735247738,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.4310301735247738,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "d0d2a237-7b1f-490d-9396-63c04f612bd8",
+        "baseline_unknown_score": 2.4215597896804444,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 2.4215597896804444,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "5f22d524-e633-4cc9-9615-4c74f93f1961",
+        "baseline_unknown_score": 2.5463792479746075,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 2.5463792479746075,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "ac528091-07ef-48bc-bd06-69c9df4a4c27",
+        "baseline_unknown_score": 0.054871341044952476,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.06899747019726721,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "87e60264-27c8-4828-aeb9-5832d885da3f",
+        "baseline_unknown_score": -0.6142097161677413,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.6142097161677413,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "583b0d93-fe92-4531-8730-a590e4424e64",
+        "baseline_unknown_score": 2.680513723190059,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 2.575961982366861,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "91f69b93-055d-498b-b031-d60e0faff3c6",
+        "baseline_unknown_score": 1.3983684393934541,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.3983684393934541,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "c8585233-d70f-421e-a067-6389a96dad5a",
+        "baseline_unknown_score": -0.38285901516208154,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.38285901516208154,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "9a2e2a64-738c-457c-afdd-bb0232ffc5f5",
+        "baseline_unknown_score": -0.4328995765110377,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.4328995765110377,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "7ee49c72-39b2-4730-9312-26b7f2b1280b",
+        "baseline_unknown_score": -0.005607071935615833,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.005607071935615833,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "36cd39b0-6a44-4e72-a6ef-709faa6b83d4",
+        "baseline_unknown_score": 1.360204359408494,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.360204359408494,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "76dc0c65-6343-44ff-b4bf-703a81805c2e",
+        "baseline_unknown_score": 0.16924917350683108,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.16924917350683108,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "078974f6-f024-4232-90e5-4f85f45a60a5",
+        "baseline_unknown_score": 0.4147514256348884,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.0162159122380936,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "93ceaeaa-0411-4d23-b128-cd85f0708900",
+        "baseline_unknown_score": 0.43848477166383965,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.2765342255308712,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "2d16e9ba-cb95-4c3b-bca6-c28b731d47ee",
+        "baseline_unknown_score": -0.633126868625148,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.633126868625148,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "231a68a5-5607-4600-971b-5ecdceb3276a",
+        "baseline_unknown_score": 1.3627378351024046,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.3627378351024046,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "e6b8ff16-a7dc-44bc-a702-5ba7d9ab8923",
+        "baseline_unknown_score": -0.17053072243573647,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.17053072243573647,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "080ed37e-3f73-4410-be0a-39833ab4819d",
+        "baseline_unknown_score": 1.109542622310069,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.23454726650558727,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3054986c-0c02-4fb7-925c-edf4066bedd7",
+        "baseline_unknown_score": -0.5276319918199373,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.5276319918199373,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "36ddd21f-8386-4139-a1b6-3e8b119489d8",
+        "baseline_unknown_score": -0.07688924289036736,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.07688924289036736,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "c25b9a0f-c643-4aa7-80cb-71211b35626b",
+        "baseline_unknown_score": 0.18772321041186527,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.18772321041186527,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "cac89a81-3df6-4894-9344-3ecff1a0331f",
+        "baseline_unknown_score": 2.2283480052090545,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 2.2283480052090545,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "1c75fbe6-6bc7-40b2-8f2b-e049e6c09d21",
+        "baseline_unknown_score": 1.813912509988926,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.8038213864422996,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "821c917c-1c02-446d-9a53-09ac9bd6733f",
+        "baseline_unknown_score": 0.5946340633401557,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.5946340633401557,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "2bae7ca0-62b7-4559-ac0c-fab7759c633d",
+        "baseline_unknown_score": -0.6707824006231055,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.6707824006231055,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "e3a64b30-270e-4651-aee6-21a815f221f2",
+        "baseline_unknown_score": -0.5451202956620596,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.5451202956620596,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "f74d86f7-86ef-4f74-ada6-a1af87fdb633",
+        "baseline_unknown_score": -0.2941171948564957,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.2941171948564957,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "c3587447-e244-4088-8ae2-03006cd2a7ef",
+        "baseline_unknown_score": 1.415843917865145,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.415843917865145,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "62506864-0fe0-49de-a088-738b2a5b5b9e",
+        "baseline_unknown_score": 0.9537695541850375,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.4881238781023586,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "6cf44f5c-ace4-4262-9787-9e6f9f9b2860",
+        "baseline_unknown_score": 0.3950352213268613,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.3950352213268613,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "d85670de-9185-4813-81c9-da2bff313745",
+        "baseline_unknown_score": 1.5200978469191742,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.1851146258463948,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "a792b1d4-deb5-4c36-9438-321805f44d32",
+        "baseline_unknown_score": -0.1735293488411268,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.1735293488411268,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "f4bb45c9-0a53-4f1c-a00b-f4de15a1cd71",
+        "baseline_unknown_score": 0.16557835101099808,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.013983998874064756,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3c9f2314-b7f8-4da3-afc3-5e859947491d",
+        "baseline_unknown_score": 0.05647287643192149,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.013698127803813832,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "e9a2c4b3-eba0-45fd-bd85-06e3692e04a0",
+        "baseline_unknown_score": -0.019893804165378535,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.019893804165378535,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "d561972a-5876-45e7-9dfa-56c4491d83ce",
+        "baseline_unknown_score": -0.6050452569955034,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.6050452569955034,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "f046b988-f71e-469e-8e81-9e05efb67e79",
+        "baseline_unknown_score": 0.8109164183192927,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.0021459397948501713,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "7bf13fb6-f7ac-47bd-b3fc-a12f93a6cb30",
+        "baseline_unknown_score": 2.3815396581829478,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 2.365055725493454,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "302e47a1-5f20-4037-af41-56ff572804f7",
+        "baseline_unknown_score": 0.87507706603763,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.49582742227687093,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "92357528-43db-4426-9aa5-72c63881689c",
+        "baseline_unknown_score": -0.21208006914138955,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.21208006914138955,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "b5a29056-55b9-49c7-a5db-1630d9e00dbd",
+        "baseline_unknown_score": 1.8427323153031392,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.1834225446668771,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "79b78dcf-955f-4cf4-bfbd-8a48af7c5543",
+        "baseline_unknown_score": -0.08064724831596759,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.3551393072228626,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "7ecfbf24-6b05-4145-bfce-e027ad3807ae",
+        "baseline_unknown_score": 2.069534815635222,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.5079544168249015,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "d025d73d-139c-406e-a577-f12a4d84cf98",
+        "baseline_unknown_score": -0.3245000515971763,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.3245000515971763,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "acea06e0-1af3-45c5-80e1-fce87acb4dac",
+        "baseline_unknown_score": 0.1470566756171828,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.1470566756171828,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "1155eee2-f458-4d38-9fad-d3da2f66e449",
+        "baseline_unknown_score": 0.5052506513875471,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.2520776130240903,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "e431a438-a835-416c-adbc-831fbbebd0fb",
+        "baseline_unknown_score": 1.1420771424771619,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.122804267888504,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "860a2b0f-3dfd-4a52-a1a9-98141e23ec97",
+        "baseline_unknown_score": -0.16611162975766322,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.16611162975766322,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3d50f390-9595-43c8-a450-06d977553c0d",
+        "baseline_unknown_score": -0.11857531213160832,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.257164299396531,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "7b6ef268-b959-497b-aff8-f430f49afc09",
+        "baseline_unknown_score": -0.10025684929157147,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.2302674266883431,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "18e43752-f1d7-48aa-a698-049d98b5bb38",
+        "baseline_unknown_score": -0.31716967259428197,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.31716967259428197,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "ab36a427-dadc-4e29-b48b-79b333f59684",
+        "baseline_unknown_score": 0.9270547334239292,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.3731795772138681,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "d9bd6225-4cfc-4e3d-9480-ada35efc9dd5",
+        "baseline_unknown_score": 0.13755397623784885,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.10603563032264032,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "78170fe7-05a5-4dfe-87da-9bf8f756c5ae",
+        "baseline_unknown_score": 0.0027629879765238285,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.15089053784162657,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "b8e9d19b-ebba-46cf-907b-16cec0055b89",
+        "baseline_unknown_score": 0.3596682234384664,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.3596682234384664,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "9aefad0e-5e1c-4387-a8ad-8b7f2bb92dde",
+        "baseline_unknown_score": 1.850957365616818,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.6684198974215054,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "191a8ca3-3142-4bb3-8fef-74e3d43cf990",
+        "baseline_unknown_score": -0.1665755262234084,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.1665755262234084,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "a19d2d7c-520f-48e7-84d9-e95aa7660a2a",
+        "baseline_unknown_score": -0.10402093037700523,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.10402093037700523,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "5f509fdf-37b2-44ac-85b8-39db28b9e681",
+        "baseline_unknown_score": -0.01820411565772907,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.01820411565772907,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "afd9de28-a5ca-4d84-8322-f8c5f9f6696a",
+        "baseline_unknown_score": 1.8363526932205465,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.6358728607791362,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "96693f66-05ec-4fec-b70e-ec61c9a22cfe",
+        "baseline_unknown_score": 2.5079859873979804,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 2.0123749526865535,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "6c064f51-4c95-4bd8-8729-74b79482ca0b",
+        "baseline_unknown_score": 0.4099268546892561,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.40153410085886027,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "ac91a1dc-f485-463d-b26e-2816a112ec9c",
+        "baseline_unknown_score": -0.004264415824525126,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.03605636917206799,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "b2c66663-322a-40fc-9a42-f0a77e85bd18",
+        "baseline_unknown_score": -0.04732546492099189,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.04732546492099189,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "5d1d7edf-6322-4a7c-af92-7918dfbf544a",
+        "baseline_unknown_score": 0.34653702693598004,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.018537956649229248,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "005ad009-6d0b-42bf-9d4f-717171c39f61",
+        "baseline_unknown_score": -0.03624337924098597,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.30673462774308546,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "960b5f86-07b5-4c2e-aa79-2c706c5e412e",
+        "baseline_unknown_score": -0.03699439642911334,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.2604668735719782,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "c3a0efd3-4d81-4f7d-a448-e023a2c9cc0d",
+        "baseline_unknown_score": 0.6793082353349875,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.6793082353349875,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "1caf4569-fcdf-4480-b469-c0080d4fc5de",
+        "baseline_unknown_score": -0.17996972405108358,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.17996972405108358,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "41c7b1c1-7447-4722-a7f6-e4a312ed3e3c",
+        "baseline_unknown_score": 0.7174261752869325,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.7174261752869325,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "db9b29d9-2a85-45c6-80dd-e55d98dc15df",
+        "baseline_unknown_score": 0.0378712972318898,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.0378712972318898,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "98e4f289-4164-47d7-92dd-13b68919fb84",
+        "baseline_unknown_score": 0.0934434518010196,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.0934434518010196,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "7b66e112-5003-43d9-9b41-f5b530c1a6d0",
+        "baseline_unknown_score": -0.10064849281518647,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.14842087467127385,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "c66f22dc-4de7-47fb-8558-ba65b5ee3044",
+        "baseline_unknown_score": 0.2380609319548733,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.04788378933478662,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "36dc9db9-afce-46ee-941f-a12e893cda78",
+        "baseline_unknown_score": 0.6632151937109909,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.11668520725376566,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "6f28dbdf-35ae-427f-bf60-2225e99e75b1",
+        "baseline_unknown_score": 0.38944948680102714,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.368840102013179,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "d01a7bff-0d8d-4621-b1f1-6c0600dec8ca",
+        "baseline_unknown_score": 1.898980665527924,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.898980665527924,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "20b4cd2f-abc9-4f6c-b199-8a5c0ed1e564",
+        "baseline_unknown_score": 0.10461586118401522,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.10461586118401522,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "bcdbaaf1-afaa-40dd-885d-14fa5a5424a8",
+        "baseline_unknown_score": 0.4833071997808788,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.4833071997808788,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "40d29b8f-cf9e-4f96-81b7-bd5188103455",
+        "baseline_unknown_score": 0.09145027266773195,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.12834339461039923,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 2,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "4196b1ca-7237-4d6b-b73f-2138ca713aa8",
+        "baseline_unknown_score": 0.023051911288953952,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.017003579140473027,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3dc3747b-aa65-4754-a2e0-e159c175fbae",
+        "baseline_unknown_score": 0.17071320933072937,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.10171263152571369,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "00fbfe1b-2d30-441b-b860-aaf1e2cc5d03",
+        "baseline_unknown_score": -0.030670220945179127,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.37456559434271797,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "0d788d60-4419-478a-b352-fc42527a1f94",
+        "baseline_unknown_score": 0.128705089717247,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.06546250728161089,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "4638630b-3f5a-4441-a5b9-c93fbffd3d5a",
+        "baseline_unknown_score": 1.846379884837642,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.0605711893185705,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "cfb8cbd3-3686-4366-97a7-b4d27a32103f",
+        "baseline_unknown_score": 0.7216382714445714,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.6326409223015431,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "dc3e27ed-bef7-4d02-a993-50513e31f952",
+        "baseline_unknown_score": -0.44492247638818283,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.44492247638818283,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "dc7b7183-eb00-41e8-8217-856c797c0fa4",
+        "baseline_unknown_score": 1.7827282993602593,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.6956021531970626,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "e1e4d05c-2860-4346-a77e-09f51de93d8d",
+        "baseline_unknown_score": -0.6346409595235701,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.6346409595235701,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "5b2891b1-d40b-4c45-967d-30cc3252c548",
+        "baseline_unknown_score": -0.2881757894651241,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.2881757894651241,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "5b233f69-c04a-4e83-b23e-3bec9b9b29fe",
+        "baseline_unknown_score": 1.3461505290180278,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.346137389919145,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "246b54b0-58ef-407d-a38b-5b1a75796b6c",
+        "baseline_unknown_score": -0.36177912839145243,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.36177912839145243,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "f99230ce-48b9-4f27-9cf5-157b73631324",
+        "baseline_unknown_score": 0.13806158080488407,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.08588484107352418,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "6dad8dcd-7116-4c16-a051-ae4e5ef4da73",
+        "baseline_unknown_score": 0.9205657694139507,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.6557260495710562,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "ed8c026c-6cf4-4179-b22c-cef7670eacf2",
+        "baseline_unknown_score": -0.3596557870114698,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.3596557870114698,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "a75d6b28-4090-47ba-a9ec-d98b115012f8",
+        "baseline_unknown_score": 1.297647334910024,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.297647334910024,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "4c7962ab-e633-4640-a69a-3a3270cb0b98",
+        "baseline_unknown_score": -0.04576496643627859,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.046219585963141685,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "113fecb5-e323-4e32-94bc-c4577beab993",
+        "baseline_unknown_score": 0.7016248142622384,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.691589427818062,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "87cd74ff-3864-4800-8dce-cf47d9d7f7a9",
+        "baseline_unknown_score": -0.05505181661287567,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.09218978960567525,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "9afede69-2f2d-4813-b361-a939799fc712",
+        "baseline_unknown_score": -0.3864057827998408,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.3864057827998408,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3d777aaa-375a-422c-8baf-8b4236f89cc5",
+        "baseline_unknown_score": 0.42945743350028975,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.3806179833819623,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "11dd3bb6-5689-4e0d-82ed-dafc2be02bef",
+        "baseline_unknown_score": 1.5901676524111235,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.5901676524111235,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "e03fe42e-a66d-4eda-98e6-b4acc91dbef0",
+        "baseline_unknown_score": 0.3639047177798763,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.296504100215959,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 2,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "beca0ac7-f84c-4088-9cf8-8c6aa2aef6cc",
+        "baseline_unknown_score": 1.416716608629822,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.2902624626914145,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "51730d2b-a0a0-489b-b671-2ec2738b11f8",
+        "baseline_unknown_score": 0.032528859415353994,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.014339458980859976,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "6d9e1265-a4dd-4acd-b929-04f2ee6dd297",
+        "baseline_unknown_score": 2.293574623258142,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 2.235597102909978,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3c07d65b-2c45-4405-bcfb-ac99eb499f68",
+        "baseline_unknown_score": -0.2329543872076555,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.2329543872076555,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "7139d265-fd84-40f8-aa8c-24027ffb27ca",
+        "baseline_unknown_score": 0.46198471353968257,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.29543469463064376,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "5a898e43-4875-4d6d-87a0-bfb5731a950f",
+        "baseline_unknown_score": 0.20385829186333188,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.17009543581671438,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 2,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "f5ea0b8f-fa10-4cf8-a6e0-f836e4832152",
+        "baseline_unknown_score": 0.6816732194060062,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.6816732194060062,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "8c1331d9-1555-4e5d-82d8-2b7ffacef953",
+        "baseline_unknown_score": -0.528960391838161,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.528960391838161,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "7fb8df18-0b66-484d-b98c-9f52293e6a76",
+        "baseline_unknown_score": -0.6435095309231841,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.6435095309231841,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3b19d205-d292-4388-8248-9c4d7f5ed26f",
+        "baseline_unknown_score": 0.6945139538178328,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.4378440996051089,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "cdbc8881-37dc-4e9f-8582-19e853d9d01f",
+        "baseline_unknown_score": 0.18966976205876596,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.18966976205876596,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "aada2f31-ac75-42d3-86d8-06de064c542d",
+        "baseline_unknown_score": -0.47885379990769944,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.47885379990769944,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "6fc3fc72-94ed-42af-bc21-0939a020df29",
+        "baseline_unknown_score": 0.25403745825101615,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.04385077870701973,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "01c84461-dac5-4b3d-ba51-8c76c8ebbc91",
+        "baseline_unknown_score": 0.27050013504686965,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.27050013504686965,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "b099d9e9-f5bd-45ec-8088-24b5c5dbbfaa",
+        "baseline_unknown_score": 0.033103093611098325,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.01827337399433466,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "ee06a2aa-1e9c-41ed-89da-12bfcb3ff42c",
+        "baseline_unknown_score": 0.3103157719965171,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.10314848971784654,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "c1393da2-d419-43f7-a3c4-7e6e24c89be5",
+        "baseline_unknown_score": 0.23791967246749024,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.1975651089494139,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "f1fdc4b2-420a-4cde-b3b9-3685197c4628",
+        "baseline_unknown_score": -0.5069692100738954,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.5069692100738954,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "8ed5d49b-9770-4b14-98b1-ddc7b0e12537",
+        "baseline_unknown_score": 0.328481245334967,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.09463848908467459,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "c3df08ee-4ee1-41b4-b2ec-ce0fed32101e",
+        "baseline_unknown_score": -0.6596431405245796,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.6596431405245796,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "f898e0cf-337c-454e-9663-c217a9c63b6e",
+        "baseline_unknown_score": 0.3094096722246722,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.3094096722246722,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "0d14abc3-a34f-43c4-ab24-a364b732affb",
+        "baseline_unknown_score": 0.08509134847642447,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.08509134847642447,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "bbbb69bb-56c2-4bd0-9966-186e2267a4b1",
+        "baseline_unknown_score": 0.1715620324970515,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.1715620324970515,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "3be47762-4b9d-4536-82a6-4bae1cc575c8",
+        "baseline_unknown_score": 0.02207718540954498,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.08820536881082283,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "e209c56c-1f7e-46f3-9272-775012c046f2",
+        "baseline_unknown_score": -0.4648389577721994,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.4648389577721994,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3400c517-34dd-41b8-98e4-4b487a7d11df",
+        "baseline_unknown_score": -0.23159224426767885,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.23159224426767885,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "0b9a5680-0909-4e19-9964-86ea454d4923",
+        "baseline_unknown_score": 0.4530676852836634,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.4530676852836634,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "f018acda-0d1d-4a51-ba01-4ba4d559e1d5",
+        "baseline_unknown_score": -0.16200827502769644,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.16200827502769644,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "d5d9941a-4860-4970-80d1-f2151c627a30",
+        "baseline_unknown_score": -0.2636315004309827,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.2636315004309827,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "af26330f-6ba1-4597-b689-f5ea4161d59e",
+        "baseline_unknown_score": -0.33015331784978064,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.33015331784978064,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "b0fea107-f928-4d3a-b72c-3b40dd0ff19d",
+        "baseline_unknown_score": 0.7242880423126128,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.33947415274147497,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "c1646110-6d6e-4f11-b7bc-54c471644093",
+        "baseline_unknown_score": 0.28331508616614876,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.16404100900798022,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "3530c7df-b5b6-49d6-87b0-577f15ba7b79",
+        "baseline_unknown_score": 1.9300194380272975,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 1.689666615576512,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "69c6a191-5017-4678-bb42-7c6da57abf80",
+        "baseline_unknown_score": -0.10469891472787651,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.43727459355325493,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "18f7970b-8766-4a98-83c7-86551aa41c7e",
+        "baseline_unknown_score": -0.6627897449223028,
+        "baseline_flagged_unknown": false,
+        "final_unknown_score": -0.6627897449223028,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 0,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "0f4e5146-3312-4c29-9263-ee32017fb3cf",
+        "baseline_unknown_score": 0.5318291101177984,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.3298979284519136,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 3,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "9cc0be80-7e83-4dc8-8557-007f37c2738b",
+        "baseline_unknown_score": -0.006112633590284522,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.2170557986102966,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "897aa9e3-5c22-4ced-8d78-acb3e5a87c2e",
+        "baseline_unknown_score": 0.027619784683466486,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.027619784683466486,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": true
+      },
+      {
+        "record_id": "af0d4bdf-8619-4664-9d3c-ef5fea15b000",
+        "baseline_unknown_score": 0.14986362880759033,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": 0.06253772020527212,
+        "adversarially_evaded_openset": false,
+        "round_of_evasion": null,
+        "also_evaded_stage1_entirely": false
+      },
+      {
+        "record_id": "aa782c14-87ee-4c2e-8429-275669f46bad",
+        "baseline_unknown_score": 0.038632188942134715,
+        "baseline_flagged_unknown": true,
+        "final_unknown_score": -0.37456559434271797,
+        "adversarially_evaded_openset": true,
+        "round_of_evasion": 1,
+        "also_evaded_stage1_entirely": false
+      }
+    ]
+  }
+}

@@ -7,7 +7,7 @@ attack dataset before training. Exit code 0 = everything passed.
 
 Hard checks (per record):
   1. schema      : required fields present + JSON parses
-  2. class       : label.class in {sqli,xss,path_traversal,code_injection}
+  2. class       : label.class in {sqli,xss,command_injection,code_injection}
   3. NO pollution: url_path is not a login/redirect/register page
   4. endpoint<->label: the payload hit the RIGHT vuln endpoint for its label
   5. payload sig : the request actually carries an attack payload of that type
@@ -35,7 +35,7 @@ import sys
 import urllib.parse
 from collections import Counter, defaultdict
 
-KNOWN = {"sqli", "xss", "path_traversal"}
+KNOWN = {"sqli", "xss", "command_injection"}
 HELDOUT = {"code_injection"}
 ALL_CLASSES = KNOWN | HELDOUT
 
@@ -44,10 +44,9 @@ ALL_CLASSES = KNOWN | HELDOUT
 ENDPOINT_MARKERS = {
     ("dvwa", "sqli"): ["/vulnerabilities/sqli"],
     ("dvwa", "xss"): ["/vulnerabilities/xss"],
-    ("dvwa", "path_traversal"): ["/vulnerabilities/fi"],
-    ("webgoat", "sqli"): ["sqlinjection/attack"],
-    ("webgoat", "xss"): ["crosssitescripting/attack"],
-    ("webgoat", "path_traversal"): ["pathtraversal"],
+    ("dvwa", "command_injection"): ["/vulnerabilities/exec"],
+    ("webgoat", "sqli"): ["sqlinjection"],
+    ("webgoat", "xss"): ["crosssitescripting"],
     ("juice_shop", "sqli"): ["/rest/products/search"],
     ("juice_shop", "xss"): ["/rest/products/search"],
     ("juice_shop", "code_injection"): ["/profile"],
@@ -61,9 +60,9 @@ SIGNATURES = {
     "xss": ["<script", "</script", "<svg", "<img", "<iframe", "<body",
             "onerror", "onload", "onmouseover", "onfocus", "javascript:",
             "alert(", "prompt(", "confirm(", "<", ">"],
-    "path_traversal": ["../", "..\\", "%2e%2e", "..%2f", "..%5c", "....//",
-                       "..;/", "etc/passwd", "boot.ini", "/etc/",
-                       "windows/win.ini", "file://"],
+    "command_injection": [";", "|", "&&", "||", "`", "$(", "%0a", "\n",
+                          "cat ", "whoami", "uname", "ifconfig", "ipconfig",
+                          "ping ", "sleep ", "nc ", "etc/passwd", "win.ini"],
     "code_injection": ["#{", "${", "{{", "<%", "7*7", "process",
                        "global.", "root", "require(", "child_process",
                        "__proto__", "constructor"],

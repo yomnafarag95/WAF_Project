@@ -92,9 +92,9 @@ that the personas are genuinely diverse and grounded in the project scope.
 - **Evasion realisation**: each persona's evasion axis yields the matching
   variant type (none->original, encoded, mutated, polyglot).
 - **Grounding**: endpoints and attack scope match config/sources.yaml exactly;
-  known = {sqli, xss, path_traversal}, held-out = code_injection (juice_shop SSTI).
-- **Class balance**: sqli 33% / xss 33% / path_traversal 22% / code_injection 11%
-  (held-out). path_traversal is lower because Juice Shop has no PT endpoint; CI is
+  known = {sqli, xss, command_injection}, held-out = code_injection (juice_shop SSTI).
+- **Class balance**: sqli 33% / xss 33% / command_injection 11% / code_injection 11%
+  (held-out). command_injection is lower because only DVWA has a cmdi endpoint; CI is
   intentionally small and held-out-only.
 
 **Known, intentional limitations (documented, not bugs)**

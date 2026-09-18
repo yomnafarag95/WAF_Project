@@ -1,0 +1,82 @@
+[
+  {
+    "frac": 0.02,
+    "n_train_rows": 1046,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9951083158630328,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.9490740740740741,
+    "openset_known_reject": 0.3356741573033708
+  },
+  {
+    "frac": 0.05,
+    "n_train_rows": 2613,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9958041958041958,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.9664351851851852,
+    "openset_known_reject": 0.3061797752808989
+  },
+  {
+    "frac": 0.1,
+    "n_train_rows": 5226,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9888888888888889,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.6273148148148148,
+    "openset_known_reject": 0.15730337078651685
+  },
+  {
+    "frac": 0.2,
+    "n_train_rows": 10452,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9854671280276817,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.8877314814814815,
+    "openset_known_reject": 0.37780898876404495
+  },
+  {
+    "frac": 0.4,
+    "n_train_rows": 20905,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9965010496850945,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.5729166666666666,
+    "openset_known_reject": 0.09831460674157304
+  },
+  {
+    "frac": 0.6,
+    "n_train_rows": 31356,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9820689655172414,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.9768518518518519,
+    "openset_known_reject": 0.49157303370786515
+  },
+  {
+    "frac": 0.8,
+    "n_train_rows": 41809,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9909533750869868,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.5335648148148148,
+    "openset_known_reject": 0.011235955056179775
+  },
+  {
+    "frac": 1.0,
+    "n_train_rows": 52261,
+    "stage1_train_f1": 1.0,
+    "stage1_val_f1": 0.9882026370575989,
+    "stage2_train_macrof1": 1.0,
+    "stage2_val_macrof1": 1.0,
+    "openset_recall": 0.6319444444444444,
+    "openset_known_reject": 0.18820224719101122
+  }
+]

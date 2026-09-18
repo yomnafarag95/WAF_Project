@@ -165,11 +165,37 @@ def login_webgoat(session, base_url, proxies, verbose=False):
         print(f"    [webgoat login skipped] {e}", file=sys.stderr)
 
 
+def login_bwapp(session, base_url, proxies, verbose=False):
+    """bWAPP: default creds bee/bug, no CSRF token on login (unlike DVWA).
+    Also sets security_level=0 (low) so the bug pages behave predictably -
+    matches the "low" level already set manually in the UI, made explicit
+    here so a freshly-recreated container doesn't silently default elsewhere.
+    Best-effort, same caveat as login_webgoat: verify real routes/params via
+    --probe before a full run."""
+    try:
+        lr = session.post(
+            f"{base_url}/login.php",
+            data={"login": "bee", "password": "bug", "security_level": "0", "form": "submit"},
+            timeout=15, verify=False, proxies=proxies, headers=SKIP,
+        )
+        session.post(
+            f"{base_url}/security_level.php",
+            data={"security_level": "0", "form": "submit"},
+            timeout=15, verify=False, proxies=proxies, headers=SKIP,
+        )
+        if verbose:
+            print(f"    [bwapp] login_post={lr.status_code}", file=sys.stderr)
+    except Exception as e:
+        print(f"    [bwapp login skipped] {e}", file=sys.stderr)
+
+
 def do_login(session, app, base_url, proxies, verbose=False):
     if app == "dvwa":
         login_dvwa(session, base_url, proxies, verbose)
     elif app == "webgoat":
         login_webgoat(session, base_url, proxies, verbose)
+    elif app == "bwapp":
+        login_bwapp(session, base_url, proxies, verbose)
     # juice_shop search is public; SSTI /profile runs best-effort as guest.
 
 
@@ -190,7 +216,10 @@ def send_step(session, base_url, step, headers, proxies, dry_run) -> bool:
             method = "POST"
     elif step.vector == "header":
         hdrs["User-Agent"] = step.payload   # header injection point
-        params[step.param] = "test"          # keep the endpoint meaningful
+        if step.param:                       # some endpoints (e.g. bwapp's
+            params[step.param] = "test"      # xss_user_agent.php) have no
+                                              # form param at all - payload-
+                                              # only-in-header, nothing to fill
     elif step.vector == "cookie":
         cookies = {"inj": step.payload}      # cookie injection point
         params[step.param] = "test"
@@ -250,10 +279,13 @@ def _attack_types_for(app_cfg, only_attack=None):
 
 
 def run_probe(apps, proxies, only_attack=None):
-    """Log in per app and fire ONE canary request per (app, attack). Prints the
-    real status code so you can confirm 200s (auth OK, endpoint OK) BEFORE a
-    full run. Uses X-Capture-Skip so nothing lands in data/raw_attack."""
-    print("[probe] logging in + one canary request per (app, attack) "
+    """Log in per app and fire ONE canary request per (app, attack, endpoint
+    VARIANT) - when an (app, attack_type) has multiple real endpoint variants
+    (e.g. bwapp's sqli has 6), every one of them is probed individually, not
+    just one representative. Prints the real status code so you can confirm
+    200s (auth OK, endpoint OK) BEFORE a full run. Uses X-Capture-Skip so
+    nothing lands in data/raw_attack."""
+    print("[probe] logging in + one canary request per (app, attack, variant) "
           "(X-Capture-Skip -> not captured)")
     canary = {"sqli": "1' OR '1'='1", "xss": "<script>1</script>",
               "command_injection": "; id", "code_injection": "#{7*7}"}
@@ -264,25 +296,27 @@ def run_probe(apps, proxies, only_attack=None):
         sess = requests.Session()
         do_login(sess, app_name, base_url, proxies, verbose=True)
         for at in attack_types:
-            spec = endpoint_for(app_name, at)
-            if not spec:
-                continue
-            params = dict(spec.get("extra", {}))
-            data = None
-            method = spec["method"]
-            payload = canary.get(at, "canary123")
-            if method == "GET":
-                params[spec["param"]] = payload
-            else:
-                data = {spec["param"]: payload}
-            try:
-                r = sess.request(method, base_url + spec["path"], params=params,
-                                 data=data, proxies=proxies, timeout=20,
-                                 allow_redirects=False, verify=False, headers=SKIP)
-                flag = "OK" if r.status_code < 400 and r.status_code != 302 else "<-- FAIL"
-                print(f"    {at:16} {method:4} {spec['path']:32} -> {r.status_code} {flag}")
-            except Exception as e:
-                print(f"    {at:16} {method:4} {spec['path']:32} -> ERROR {e}")
+            specs = endpoint_for(app_name, at)
+            for spec in specs:
+                params = dict(spec.get("extra", {}))
+                data = None
+                hdrs = dict(SKIP)
+                method = spec["method"]
+                payload = canary.get(at, "canary123")
+                if spec.get("force_vector") == "header":
+                    hdrs["User-Agent"] = payload
+                elif method == "GET":
+                    params[spec["param"]] = payload
+                else:
+                    data = {spec["param"]: payload}
+                try:
+                    r = sess.request(method, base_url + spec["path"], params=params,
+                                     data=data, proxies=proxies, timeout=20,
+                                     allow_redirects=False, verify=False, headers=hdrs)
+                    flag = "OK" if r.status_code < 400 and r.status_code != 302 else "<-- FAIL"
+                    print(f"    {at:16} {method:4} {spec['path']:32} -> {r.status_code} {flag}")
+                except Exception as e:
+                    print(f"    {at:16} {method:4} {spec['path']:32} -> ERROR {e}")
         sess.close()
     print("\n[probe] done. Want: 200 (or 500 for juice sqli/ssti = injection landed). "
           "302=auth broken, 404=wrong path, 400=wrong method/params.")

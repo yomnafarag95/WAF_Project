@@ -31,6 +31,29 @@ services:
     networks: [lab_net]
     restart: unless-stopped
 
+  # bWAPP — self-contained image (bundles its own MySQL), same pattern as dvwa.
+  # NEW HELD-OUT cross-app test target (2026-09-12): replaces webgoat in that
+  # role because it has real sqli + xss + command injection, so cross_app_test
+  # can finally measure generalization on all three known classes, not two.
+  # One-time setup: visit /install.php once. Login: bee / bug.
+  bwapp:
+    image: raesene/bwapp:latest
+    container_name: bwapp
+    ports: ["8082:80"]
+    networks: [lab_net]
+    restart: unless-stopped
+
+  # Mutillidae II — added 2026-09-18 as a SECOND real, trainable source of
+  # command_injection (DVWA was the only one; see PROGRESS_LOG.md). PHP
+  # stack, self-contained (bundles its own DB). No documented login
+  # requirement for the OS Command Injection page.
+  mutillidae:
+    image: citizenstig/nowasp:latest
+    container_name: mutillidae
+    ports: ["8083:80"]
+    networks: [lab_net]
+    restart: unless-stopped
+
   mitmproxy-benign:
     image: mitmproxy/mitmproxy:latest
     container_name: mitm_benign

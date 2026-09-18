@@ -16,7 +16,7 @@ import glob
 import json
 import sys
 
-ATTACK_CLASSES = {"sqli", "xss", "path_traversal", "code_injection"}
+ATTACK_CLASSES = {"sqli", "xss", "command_injection", "code_injection"}
 CLASSES = {"benign"} | ATTACK_CLASSES
 LEVEL1 = {"benign", "malicious"}
 SPLIT_ROLES = {"train", "val", "test", "heldout_unknown", "cross_app_test"}

@@ -1,0 +1,78 @@
+{
+  "n_total": 35315,
+  "class_counts": {
+    "benign": 24563,
+    "sqli": 3662,
+    "xss": 4135,
+    "command_injection": 2091,
+    "code_injection": 864
+  },
+  "lda_separation_captured": [
+    0.6116068959236145,
+    0.19092698395252228
+  ],
+  "n_features": 34,
+  "top15_stage1_importance": [
+    [
+      "request_rate_window",
+      0.15797742981499485
+    ],
+    [
+      "query_param_count",
+      0.1123640952373962
+    ],
+    [
+      "quote_parity",
+      0.0824624165031192
+    ],
+    [
+      "quote_count",
+      0.07029111919050443
+    ],
+    [
+      "inter_arrival_ms",
+      0.06998588998437873
+    ],
+    [
+      "payload_length",
+      0.062409002151531785
+    ],
+    [
+      "angle_bracket_count",
+      0.054937467737321076
+    ],
+    [
+      "url_payload_length",
+      0.05450227911264266
+    ],
+    [
+      "kw_cmdi_density",
+      0.03380885930300522
+    ],
+    [
+      "kw_cmdi_count",
+      0.03095550106228647
+    ],
+    [
+      "sql_comment_count",
+      0.030427043729884747
+    ],
+    [
+      "path_length",
+      0.02785120222268012
+    ],
+    [
+      "special_char_ratio",
+      0.022815113969935897
+    ],
+    [
+      "encoded_char_ratio",
+      0.021878837566112842
+    ],
+    [
+      "header_count",
+      0.02152637779354072
+    ]
+  ],
+  "tsne_sample_size": 7464
+}

@@ -1,0 +1,53 @@
+{
+  "folds": [
+    {
+      "held_class": "sqli",
+      "known_classes": [
+        "command_injection",
+        "xss"
+      ],
+      "n_train_benign": 36583,
+      "n_train_malicious": 10324,
+      "n_val_known": 452,
+      "n_unknown_proxy": 6718,
+      "sanity_stage1_f1_on_2_known_classes": 1.0,
+      "threshold": 0.0012537173461169004,
+      "open_set_recall": 0.4167907115212861,
+      "known_reject_rate": 0.017699115044247787
+    },
+    {
+      "held_class": "xss",
+      "known_classes": [
+        "command_injection",
+        "sqli"
+      ],
+      "n_train_benign": 36583,
+      "n_train_malicious": 10341,
+      "n_val_known": 450,
+      "n_unknown_proxy": 6717,
+      "sanity_stage1_f1_on_2_known_classes": 0.9987878787878788,
+      "threshold": 0.0012525039492174983,
+      "open_set_recall": 0.5279142474318892,
+      "known_reject_rate": 0.0022222222222222222
+    },
+    {
+      "held_class": "command_injection",
+      "known_classes": [
+        "sqli",
+        "xss"
+      ],
+      "n_train_benign": 36583,
+      "n_train_malicious": 10691,
+      "n_val_known": 522,
+      "n_unknown_proxy": 5349,
+      "sanity_stage1_f1_on_2_known_classes": 1.0,
+      "threshold": 0.00125205481890589,
+      "open_set_recall": 0.618807253692279,
+      "known_reject_rate": 0.0019157088122605363
+    }
+  ],
+  "mean_open_set_recall": 0.5211707375484848,
+  "std_open_set_recall": 0.08261064104920872,
+  "mean_known_reject_rate": 0.007279015359576848,
+  "reference_code_injection_recall": 0.5219907407407407
+}
