@@ -123,6 +123,19 @@ def endpoint_for(app: str, attack_type: str):
     return spec if isinstance(spec, list) else [spec]
 
 
+# Apps whose backend is confirmed Linux-only (checked live via `docker exec
+# ps aux` - Apache/PHP on Linux, no cmd.exe/PowerShell). Windows-flavored
+# command_injection payloads (payload_id prefix "win_") don't just "not
+# work" against these - found live 2026-09-18 that they actively cause
+# real hangs: e.g. `$(type C:\windows\win.ini)` evaluates to garbage text
+# that becomes a SECOND positional argument to Mutillidae's `nslookup
+# $target_host`, which nslookup then tries to contact as an alternate DNS
+# SERVER, hanging/retrying for a long time. Excluding them per-app is both
+# the safe fix and the more realistic one - a real attacker who's found a
+# Linux target doesn't waste probes on Windows syntax either.
+LINUX_ONLY_APPS = {"mutillidae"}
+
+
 def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
     """Turn one attacker persona into a list of AttackStep for (app, attack_type).
     When multiple real endpoint variants exist for this (app, attack_type),
@@ -134,6 +147,17 @@ def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
         return []
 
     bank = payloads.base_payloads(attack_type, persona.goal.value)
+    if app in LINUX_ONLY_APPS:
+        # Exclude by CONTENT, not just the "win_"-prefixed payload_ids -
+        # the auto-generated gen_chain_N/gen_subshell_N entries also
+        # contain "type C:\windows\win.ini" and "curl http://evil.example"
+        # (found live 2026-09-18: both cause real hangs against
+        # Mutillidae's nslookup-based endpoint, see LINUX_ONLY_APPS docstring
+        # above), but their IDs don't start with "win_" so a prefix-only
+        # filter would have missed 8 more of them.
+        _risky = ("win.ini", "evil.example", "cmd.exe", "powershell")
+        bank = [(pid, raw) for pid, raw in bank
+                if not pid.startswith("win_") and not any(r in raw.lower() for r in _risky)]
     if not bank:
         return []
 
