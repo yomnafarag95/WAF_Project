@@ -156,8 +156,22 @@ def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
         # above), but their IDs don't start with "win_" so a prefix-only
         # filter would have missed 8 more of them.
         _risky = ("win.ini", "evil.example", "cmd.exe", "powershell")
+        # ALSO exclude every $(...) / backtick command-substitution payload,
+        # structurally, regardless of what's inside it - found live
+        # 2026-09-18 (4th incident): `ps aux` substitutes its own
+        # multi-word OUTPUT directly into the argument list, so
+        # "nslookup 127.0.0.1`ps aux`" hands nslookup a dozen extra
+        # positional arguments; nslookup treats the 2nd one as an
+        # alternate DNS SERVER to query and hangs trying to reach it. This
+        # happens for ANY successful substitution with whitespace in its
+        # output (id/whoami/uname/ls/env/ps - nearly everything), not just
+        # the two keyword-based cases above, so it needs a structural
+        # exclusion, not another keyword.
+        _subshell_markers = ("$" + "(", chr(96))  # chr(96) = backtick
         bank = [(pid, raw) for pid, raw in bank
-                if not pid.startswith("win_") and not any(r in raw.lower() for r in _risky)]
+                if not pid.startswith("win_")
+                and not any(r in raw.lower() for r in _risky)
+                and not any(m in raw for m in _subshell_markers)]
     if not bank:
         return []
 
