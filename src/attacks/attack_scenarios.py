@@ -176,8 +176,19 @@ def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
         # happen to trip the content/substitution checks below (win_ping_n,
         # win_semicolon_dir_c slipped through undetected). Check for
         # "-win_" as a substring instead - matches the real ID shape.
+        # "%0a" as a literal separator (not a real decoded newline) is
+        # ALSO structurally excluded: found live 2026-09-18 that
+        # requests' own form-encoding re-encodes the "%" in our payload
+        # text to "%25" on the wire, so PHP's single decode ALWAYS
+        # produces literal "%0a" text, never a real newline - for every
+        # app, not just Mutillidae. Harmless for DVWA/bWAPP (ping fails
+        # cleanly on the resulting bad arg), but for Mutillidae the
+        # literal space before the following command word creates the
+        # same "2nd positional argument = DNS server" hang as everything
+        # else above, regardless of which command follows.
         bank = [(pid, raw) for pid, raw in bank
                 if "-win_" not in pid
+                and "%0a" not in raw.lower()
                 and not any(r in raw.lower() for r in _risky)
                 and not any(m in raw for m in _subshell_markers)]
     if not bank:
