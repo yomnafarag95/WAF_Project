@@ -71,12 +71,11 @@ ENDPOINTS = {
         {"method": "POST", "path": "/commandi.php", "param": "target"},
         {"method": "POST", "path": "/commandi_blind.php", "param": "target"},
     ],
-    # PLACEHOLDER - added 2026-09-18, NOT YET VERIFIED against a live
-    # container. Mutillidae II's classic OS-Command-Injection page is
-    # index.php?page=dns-lookup.php with a target_host field, but confirm
-    # the exact page/param by opening http://localhost:8083 in a browser
-    # BEFORE running attack_driver.py against this - do not trust this
-    # blindly.
+    # Verified live 2026-09-18 against citizenstig/nowasp:latest, v2.6.62:
+    # form method is POST (URL never changes on submit), field is
+    # name="target_host" (page source even tags it
+    # OSCommandInjectionPoint="1" - Mutillidae's own marker for this exact
+    # injection point).
     ("mutillidae", "command_injection"): [
         {"method": "POST", "path": "/index.php", "param": "target_host",
          "extra": {"page": "dns-lookup.php"}},
