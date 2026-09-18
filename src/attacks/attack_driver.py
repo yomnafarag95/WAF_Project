@@ -208,12 +208,17 @@ def send_step(session, base_url, step, headers, proxies, dry_run) -> bool:
     cookies = None
     method = step.method
 
-    # value_prefix (e.g. Mutillidae's "127.0.0.1") only applies to
-    # query/body vectors, where the payload becomes the WHOLE field value -
-    # header/cookie vectors already put a harmless "test" placeholder in
-    # this same field (see below), so the underlying command never sees an
-    # empty argument for those.
+    # value_prefix (e.g. Mutillidae's "127.0.0.1") applies to query/body
+    # vectors, where the payload becomes the WHOLE field value. For
+    # header/cookie vectors, the SAME value_prefix doubles as a safer
+    # placeholder than the generic "test" (found 2026-09-18: Mutillidae's
+    # target_host feeds `nslookup`, and "test" needs a real DNS lookup this
+    # isolated lab network can't do, so it hangs/retries for a long time -
+    # unlike an IP literal like "127.0.0.1", which resolves instantly with
+    # no network round-trip at all). Defaults to "" for every other app,
+    # so this falls back to plain "test" exactly as before.
     full_value = step.value_prefix + step.payload
+    placeholder = step.value_prefix or "test"
     if step.vector == "query":
         params[step.param] = full_value
     elif step.vector == "body":
@@ -223,12 +228,12 @@ def send_step(session, base_url, step, headers, proxies, dry_run) -> bool:
     elif step.vector == "header":
         hdrs["User-Agent"] = step.payload   # header injection point
         if step.param:                       # some endpoints (e.g. bwapp's
-            params[step.param] = "test"      # xss_user_agent.php) have no
+            params[step.param] = placeholder # xss_user_agent.php) have no
                                               # form param at all - payload-
                                               # only-in-header, nothing to fill
     elif step.vector == "cookie":
         cookies = {"inj": step.payload}      # cookie injection point
-        params[step.param] = "test"
+        params[step.param] = placeholder
 
     if dry_run:
         loc = {"query": f"?{step.param}=<payload>", "body": "[body]",
