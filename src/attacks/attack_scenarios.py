@@ -168,8 +168,16 @@ def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
         # the two keyword-based cases above, so it needs a structural
         # exclusion, not another keyword.
         _subshell_markers = ("$" + "(", chr(96))  # chr(96) = backtick
+        # REAL BUG found 2026-09-18 while testing: payload_id in the bank
+        # is "{attack_type}-{goal}-{name}" (e.g.
+        # "command_injection-exploit-win_ping_n"), which never STARTS WITH
+        # "win_" - pid.startswith("win_") silently matched nothing, this
+        # whole time, for every win_-prefixed entry that didn't ALSO
+        # happen to trip the content/substitution checks below (win_ping_n,
+        # win_semicolon_dir_c slipped through undetected). Check for
+        # "-win_" as a substring instead - matches the real ID shape.
         bank = [(pid, raw) for pid, raw in bank
-                if not pid.startswith("win_")
+                if "-win_" not in pid
                 and not any(r in raw.lower() for r in _risky)
                 and not any(m in raw for m in _subshell_markers)]
     if not bank:
