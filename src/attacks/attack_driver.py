@@ -242,9 +242,19 @@ def send_step(session, base_url, step, headers, proxies, dry_run) -> bool:
               f"{step.path} {loc}  payload={step.payload[:70]!r}")
         return True
 
+    # Shorter timeout for apps whose backend can genuinely hang (see
+    # attack_scenarios.LINUX_ONLY_APPS - Mutillidae's nslookup-based
+    # endpoint hangs when it receives 2+ positional arguments, which
+    # several DIFFERENT payload/evasion combinations were found to trigger
+    # live, 2026-09-18). A timed-out request never gets a response, so
+    # capture_addon.py's response() hook never fires and nothing bad gets
+    # written - the only cost of a hang is wasted time, so a short timeout
+    # here just makes any FUTURE undiscovered case cheap instead of
+    # cascading for minutes across every request behind it.
+    request_timeout = 5 if step.app in ("mutillidae",) else 20
     try:
         session.request(method, url, params=params, data=data, headers=hdrs,
-                        cookies=cookies, proxies=proxies, timeout=20,
+                        cookies=cookies, proxies=proxies, timeout=request_timeout,
                         allow_redirects=False, verify=False)
         return True
     except Exception as e:
