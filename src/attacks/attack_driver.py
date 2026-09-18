@@ -208,10 +208,16 @@ def send_step(session, base_url, step, headers, proxies, dry_run) -> bool:
     cookies = None
     method = step.method
 
+    # value_prefix (e.g. Mutillidae's "127.0.0.1") only applies to
+    # query/body vectors, where the payload becomes the WHOLE field value -
+    # header/cookie vectors already put a harmless "test" placeholder in
+    # this same field (see below), so the underlying command never sees an
+    # empty argument for those.
+    full_value = step.value_prefix + step.payload
     if step.vector == "query":
-        params[step.param] = step.payload
+        params[step.param] = full_value
     elif step.vector == "body":
-        data = {step.param: step.payload}
+        data = {step.param: full_value}
         if method == "GET":
             method = "POST"
     elif step.vector == "header":

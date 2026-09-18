@@ -76,9 +76,23 @@ ENDPOINTS = {
     # name="target_host" (page source even tags it
     # OSCommandInjectionPoint="1" - Mutillidae's own marker for this exact
     # injection point).
+    #
+    # value_prefix="127.0.0.1" - REQUIRED, found 2026-09-18 the hard way:
+    # this page shells out to `nslookup $target_host` with NOTHING
+    # prepended. Sending the raw payload alone (e.g. "| whoami") leaves
+    # nslookup with ZERO arguments, and unlike ping (DVWA/bWAPP's command,
+    # which just prints a usage error and exits), nslookup with no args
+    # drops into an INTERACTIVE prompt and hangs forever waiting on stdin -
+    # confirmed live (docker exec + ps aux caught two real stuck `nslookup`
+    # processes, which then backed up Apache's whole worker pool and
+    # timed out every subsequent request). Real attackers exploiting this
+    # exact page always prepend a real-looking hostname first (confirmed
+    # against a public walkthrough: "www.cnn.com;mkfifo ...") - this
+    # prefix makes our traffic match that, and is the actual fix, not a
+    # workaround.
     ("mutillidae", "command_injection"): [
         {"method": "POST", "path": "/index.php", "param": "target_host",
-         "extra": {"page": "dns-lookup.php"}},
+         "extra": {"page": "dns-lookup.php"}, "value_prefix": "127.0.0.1"},
     ],
 }
 
@@ -96,6 +110,7 @@ class AttackStep:
     parent_id: str
     payload_id: str
     extra_params: dict = field(default_factory=dict)
+    value_prefix: str = ""
 
 
 def endpoint_for(app: str, attack_type: str):
@@ -149,5 +164,6 @@ def build_attack_steps(persona, app: str, attack_type: str, rng) -> list:
             payload=transformed, vector=vector,
             variant_type=variant_type, parent_id=parent_id, payload_id=payload_id,
             extra_params=dict(spec.get("extra", {})),
+            value_prefix=spec.get("value_prefix", ""),
         ))
     return steps
