@@ -47,6 +47,27 @@ BENIGN_NAMES = ["John", "Sara", "Ali", "Mona", "Omar", "Lina", "guest",
                 "Mariam", "Fady", "Reem", "Bassel", "Habiba", "Ihab",
                 "user1", "user2", "admin2", "demo"]
 
+# Mutillidae II - real values read directly from its own <select> dropdowns
+# (view-someones-blog.php's #id_author_select, text-file-viewer.php's
+# #id_textfile_select) via a live GET, not guessed. Added 2026-09-18: the
+# original 3 literal, unparameterized journeys only ever produced 5 unique
+# requests total per whole run (see reports/PROGRESS_LOG.md) because
+# Playwright reuses only 3 distinct User-Agent strings across 6 personas,
+# so any two personas sharing one collide on capture_addon.py's dedup
+# signature. Real dropdown/textarea VALUES (not just page visits) are the
+# fix - each pick now produces a genuinely different request body.
+MUTILLIDAE_AUTHORS = ["admin", "adrian", "john", "jeremy", "bryce", "samurai",
+                       "jim", "bobby", "simba", "dreveil", "scotty", "cal",
+                       "kevin", "dave", "patches", "rocky", "tim", "ABaker",
+                       "PPan", "CHook", "james", "ed"]
+MUTILLIDAE_TEXTFILES = [
+    "http://www.textfiles.com/hacking/auditool.txt",
+    "http://www.textfiles.com/hacking/atms",
+    "http://www.textfiles.com/hacking/backdoor.txt",
+    "http://www.textfiles.com/hacking/hack1.hac",
+    "http://www.textfiles.com/hacking/hacking101.hac",
+]
+
 JOURNEYS = {
     # ---------- Juice Shop (Angular SPA — hash routes + REST API) ----------
     "browse_home":     [{"do": "goto", "path": "/"}],
@@ -86,12 +107,29 @@ JOURNEYS = {
                         {"do": "goto", "path": "/favicon.ico"}],
     "login":           [{"do": "login"}],   #   handler    driver
 
-    # ---------- Mutillidae II (PHP) - added 2026-09-18 ----------
-    # Page names read directly from the site's own menu HTML (already
-    # confirmed, not guessed): homepage + two harmless "Others" pages.
+    # ---------- Mutillidae II (PHP) - added 2026-09-18, reworked same day ----------
+    # Page names + form field names/selectors verified live (curl'd the raw
+    # HTML, confirmed each form's real method=POST action, and confirmed
+    # GET-with-query-string does NOT work for view-someones-blog/text-file-
+    # viewer - only add-to-your-blog's textarea is a plain GET-safe goto).
     "mutillidae_home":      [{"do": "goto", "path": "/index.php"}],
-    "mutillidae_blog":      [{"do": "goto", "path": "/index.php?page=add-to-your-blog.php"},
-                             {"do": "goto", "path": "/index.php?page=view-someones-blog.php"}],
-    "mutillidae_text_view": [{"do": "goto", "path": "/index.php?page=text-file-viewer.php"},
-                             {"do": "goto", "path": "/index.php?page=show-log.php"}],
+    "mutillidae_show_log":  [{"do": "goto", "path": "/index.php?page=show-log.php"}],
+    "mutillidae_write_blog": [
+        {"do": "goto", "path": "/index.php?page=add-to-your-blog.php"},
+        # {term}x{name}x{id} combined = ~40x39x30 ~ 46,800 combinations from
+        # pools that already exist above - unlike the two dropdown-based
+        # journeys, this textarea has no fixed option list to be capped by.
+        {"do": "fill", "selector": "textarea[name='blog_entry']", "value": "{term} {name} {id}"},
+        {"do": "click", "selector": "input[name='add-to-your-blog-php-submit-button']"},
+    ],
+    "mutillidae_view_blog": [
+        {"do": "goto", "path": "/index.php?page=view-someones-blog.php"},
+        {"do": "select", "selector": "#id_author_select", "value": "{author}"},
+        {"do": "click", "selector": "input[name='view-someones-blog-php-submit-button']"},
+    ],
+    "mutillidae_view_textfile": [
+        {"do": "goto", "path": "/index.php?page=text-file-viewer.php"},
+        {"do": "select", "selector": "#id_textfile_select", "value": "{textfile}"},
+        {"do": "click", "selector": "input[name='text-file-viewer-php-submit-button']"},
+    ],
 }

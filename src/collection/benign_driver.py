@@ -33,7 +33,8 @@ import uuid
 import yaml
 from playwright.sync_api import sync_playwright
 
-from journeys import JOURNEYS, PRODUCT_IDS, SEARCH_TERMS, BENIGN_NAMES
+from journeys import (JOURNEYS, PRODUCT_IDS, SEARCH_TERMS, BENIGN_NAMES,
+                       MUTILLIDAE_AUTHORS, MUTILLIDAE_TEXTFILES)
 from personas.configs import PERSONAS, Device, PersonaConfig
 
 # A journey run more than this many times in ONE session used to be the
@@ -151,16 +152,21 @@ def do_login(page, app_name, base_url, app_cfg):
 
 # ------------------- journey execution -------------------
 def _fill_path_params(path: str) -> str:
-    """Substitute {term}/{id} placeholders (see journeys.py) with a fresh
-    random value each time a step runs, so repeated visits to the same
-    journey within a session produce genuinely different requests instead
-    of literal repeats."""
+    """Substitute {term}/{id}/{name}/{author}/{textfile} placeholders (see
+    journeys.py) with a fresh random value each time a step runs, so
+    repeated visits to the same journey within a session produce
+    genuinely different requests instead of literal repeats. Applied to
+    BOTH goto paths and fill/select step values (see run_step)."""
     if "{term}" in path:
         path = path.replace("{term}", random.choice(SEARCH_TERMS))
     if "{id}" in path:
         path = path.replace("{id}", str(random.choice(PRODUCT_IDS)))
     if "{name}" in path:
         path = path.replace("{name}", random.choice(BENIGN_NAMES))
+    if "{author}" in path:
+        path = path.replace("{author}", random.choice(MUTILLIDAE_AUTHORS))
+    if "{textfile}" in path:
+        path = path.replace("{textfile}", random.choice(MUTILLIDAE_TEXTFILES))
     return path
 
 
@@ -171,7 +177,9 @@ def run_step(page, base_url, step):
             path = _fill_path_params(step["path"])
             page.goto(base_url + path, wait_until="domcontentloaded", timeout=15000)
         elif action == "fill":
-            page.fill(step["selector"], step["value"], timeout=5000)
+            page.fill(step["selector"], _fill_path_params(step["value"]), timeout=5000)
+        elif action == "select":
+            page.select_option(step["selector"], _fill_path_params(step["value"]), timeout=5000)
         elif action == "click":
             page.click(step["selector"], timeout=5000)
     except Exception as e:
